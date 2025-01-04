@@ -4,10 +4,7 @@ import com.sti.accounting.securityLayer.dto.CompanyDto;
 import com.sti.accounting.securityLayer.service.CompanyService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -27,13 +24,13 @@ public class CompanyController {
         return companyService.getAllCompany();
     }
     @GetMapping("/{id}")
-    public CompanyDto  getCompanyById(Long id) {
+    public CompanyDto  getCompanyById(@PathVariable Long id) {
         log.info("Getting company by id: {}", id);
         return companyService.getCompanyById(id);
     }
 
     @PostMapping()
-    public void saveCompany(CompanyDto companyDto) {
+    public void saveCompany(@RequestBody CompanyDto companyDto) {
         log.info("Saving company: {}", companyDto);
         companyService.saveCompany(companyDto);
     }

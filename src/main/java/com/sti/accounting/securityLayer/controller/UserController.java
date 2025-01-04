@@ -35,7 +35,7 @@ public class UserController {
     }
 
     @PostMapping("/")
-    public void createUser(CreateUserDto createUserDto) {
+    public void createUser(@RequestBody CreateUserDto createUserDto) {
         log.info("Create user");
         userService.createUser(createUserDto);
     }

@@ -11,6 +11,7 @@ import com.sti.accounting.securityLayer.utils.TypeSMS;
 import com.twilio.Twilio;
 import com.twilio.rest.api.v2010.account.Message;
 import com.twilio.type.PhoneNumber;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,29 +26,31 @@ public class NotificationService {
     @Value("${app.auth.token}")
     private String authToken;
 
-    @Value("$app.send.grid.key")
+    @Value("${app.send.grid.key}")
     private String sendGridKey;
 
 
-    public NotificationService() {
+    @PostConstruct
+    private void init() {
         initTwilio();
     }
 
     private void initTwilio() {
         if(isNullOrEmpty(accountSid) ) {
             this.accountSid = System.getenv("TWILIO_ACCOUNT_SID");
-
         }
         if( isNullOrEmpty(authToken)) {
             this.authToken = System.getenv("TWILIO_AUTH_TOKEN");
         }
 
-        if (isNullOrEmpty(accountSid) || isNullOrEmpty(authToken)){
-            throw  new RuntimeException("Twilio keys are needed");
+        if (!isNullOrEmpty(accountSid) && !isNullOrEmpty(authToken)) {
+            Twilio.init(accountSid, authToken);
+            log.info("Twilio initialized successfully");
+        } else {
+            log.warn("Twilio credentials not found - SMS functionality will be disabled");
         }
-
-        Twilio.init(accountSid, authToken);
     }
+
 
     private boolean isNullOrEmpty(String string) {
         return string == null || string.trim().isEmpty();
