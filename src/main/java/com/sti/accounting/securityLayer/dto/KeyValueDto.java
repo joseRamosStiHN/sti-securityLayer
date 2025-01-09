@@ -23,5 +23,5 @@ public class KeyValueDto {
     private String name;
     private String description;
 
-    private Boolean isGlobal;
+    private boolean isGlobal;
 }

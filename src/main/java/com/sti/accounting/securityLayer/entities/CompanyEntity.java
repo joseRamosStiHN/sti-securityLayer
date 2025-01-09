@@ -3,7 +3,9 @@ package com.sti.accounting.securityLayer.entities;
 
 import com.sti.accounting.securityLayer.utils.CompanyTypeEnum;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
 
@@ -16,7 +18,10 @@ import java.util.UUID;
 @Setter
 @Entity
 @Table(name = "COMPANY")
+@NoArgsConstructor
+@AllArgsConstructor
 public class CompanyEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -41,4 +46,7 @@ public class CompanyEntity {
     @CreatedDate
     private LocalDateTime updatedAt;
 
+    public CompanyEntity(Long id) {
+        this.id = id;
+    }
 }

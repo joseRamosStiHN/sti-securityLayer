@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -38,6 +39,15 @@ public class CompanyDto {
     private LocalDate createdAt;
 
     private Set<KeyValueDto> roles;
+
+    private List<Long> userIds;
+
+    private List<Long> permissions;
+
+
+    public void setIsActive(boolean isActive) {
+        this.isActive = isActive;
+    }
 
     @Override
     public boolean equals(Object o) {

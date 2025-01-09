@@ -17,29 +17,20 @@ public class CompanyUserRoleEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "company_id")
-    Long companyId;
-
-    @Column(name = "user_id")
-    Long userId;
-
-    @Column(name = "permissions_id")
-    Long permissionId;
-
     @ManyToOne
-    @JoinColumn(name = "company_id", insertable = false, updatable = false, nullable = false)
+    @JoinColumn(name = "company_id",  nullable = false)
     private CompanyEntity company;
 
     @ManyToOne
-    @JoinColumn(name = "user_id", insertable = false, updatable = false, nullable = false)
+    @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
 
     @ManyToOne
-    @JoinColumn(name = "role_id", insertable = false, updatable = false, nullable = true)
+    @JoinColumn(name = "role_id", nullable = false)
     private RoleEntity role;
 
     @ManyToOne
-    @JoinColumn(name = "permissions_id", insertable = false, updatable = false)
+    @JoinColumn(name = "permissions_id")
     private PermissionsEntity permissions;
 
     private String status; // ACTIVE, SUSPENDED

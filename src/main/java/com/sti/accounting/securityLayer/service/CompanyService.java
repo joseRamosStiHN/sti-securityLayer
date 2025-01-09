@@ -2,18 +2,20 @@ package com.sti.accounting.securityLayer.service;
 
 import com.sti.accounting.securityLayer.dto.CompanyDto;
 
-import com.sti.accounting.securityLayer.entities.CompanyEntity;
-import com.sti.accounting.securityLayer.repository.ICompanyRepository;
+import com.sti.accounting.securityLayer.dto.KeyValueDto;
+import com.sti.accounting.securityLayer.entities.*;
+import com.sti.accounting.securityLayer.repository.*;
 import com.sti.accounting.securityLayer.utils.CompanyTypeEnum;
+import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.time.LocalDateTime;
+import java.util.*;
 
 
 @Service
@@ -22,56 +24,144 @@ public class CompanyService {
 
     private static final Logger log = LoggerFactory.getLogger(CompanyService.class);
     private final ICompanyRepository companyRepository;
+    private final ICompanyUserRepository companyUserRepository;
+    private final IRoleRepository roleRepository;
+    private final IUserRepository userRepository;
+    private final IPermissionRepository permissionsRepository;
 
-    public CompanyService(ICompanyRepository companyRepository) {
+    public CompanyService(ICompanyRepository companyRepository, ICompanyUserRepository companyUserRepository, IRoleRepository roleRepository, IUserRepository userRepository, IPermissionRepository permissionsRepository) {
         this.companyRepository = companyRepository;
+        this.companyUserRepository = companyUserRepository;
+        this.roleRepository = roleRepository;
+        this.userRepository = userRepository;
+        this.permissionsRepository = permissionsRepository;
     }
 
     public List<CompanyDto> getAllCompany() {
         log.info("Getting all companies");
-        return companyRepository.findAll().stream().map(x->{
+        return companyRepository.findAll().stream().map(x -> {
             CompanyDto dto = new CompanyDto();
-            dto.setId(x.getId());
-            dto.setName(x.getCompanyName());
-            dto.setAddress(x.getCompanyAddress());
-            dto.setPhone(x.getCompanyPhone());
-            dto.setEmail(x.getCompanyEmail());
-            dto.setDescription(x.getCompanyDescription());
-            dto.setRtn(x.getCompanyRTN());
-            dto.setType(Objects.equals(CompanyTypeEnum.EMPRESA.toString(), x.getType()) ? CompanyTypeEnum.EMPRESA : CompanyTypeEnum.NATURAL);
+            responseCompanyDto(dto, x);
             return dto;
         }).toList();
     }
 
     public CompanyDto getCompanyById(Long id) {
         log.info("Getting company by id: {}", id);
-        CompanyEntity entity = companyRepository.findById(id).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND));
+        CompanyEntity entity = companyRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         CompanyDto dto = new CompanyDto();
-        dto.setId(entity.getId());
-        dto.setName(entity.getCompanyName());
-        dto.setAddress(entity.getCompanyAddress());
-        dto.setPhone(entity.getCompanyPhone());
-        dto.setEmail(entity.getCompanyEmail());
-        dto.setDescription(entity.getCompanyDescription());
-        dto.setRtn(entity.getCompanyRTN());
-        dto.setType(Objects.equals(CompanyTypeEnum.EMPRESA.toString(), entity.getType()) ? CompanyTypeEnum.EMPRESA : CompanyTypeEnum.NATURAL);
-        dto.setTenantId(entity.getTenantId().toString());
+        responseCompanyDto(dto, entity);
         return dto;
     }
 
+    @Transactional
     public void saveCompany(CompanyDto companyDto) {
         log.info("Saving company: {}", companyDto);
+
+        // 1. Guardar la compañía
         UUID uuid = UUID.randomUUID();
-        CompanyEntity entity = new CompanyEntity();
-        entity.setCompanyName(companyDto.getName());
-        entity.setCompanyAddress(companyDto.getAddress());
-        entity.setCompanyPhone(companyDto.getPhone());
-        entity.setCompanyEmail(companyDto.getEmail());
-        entity.setCompanyDescription(companyDto.getDescription());
-        entity.setCompanyRTN(companyDto.getRtn());
-        entity.setType(companyDto.getType());
-        entity.setTenantId(uuid.toString());
-        companyRepository.save(entity);
-        log.info("company with tenantId {} created", uuid);
+        CompanyEntity company = new CompanyEntity();
+        company.setCompanyName(companyDto.getName());
+        company.setCompanyDescription(companyDto.getDescription());
+        company.setCompanyAddress(companyDto.getAddress());
+        company.setCompanyRTN(companyDto.getRtn());
+        company.setType(companyDto.getType());
+        company.setCompanyEmail(companyDto.getEmail());
+        company.setCompanyPhone(companyDto.getPhone());
+        company.setCompanyWebsite(companyDto.getWebsite());
+        company.setIsActive(companyDto.isActive());
+        company.setTenantId(uuid.toString());
+        company.setCreatedAt(LocalDateTime.now());
+
+        company = companyRepository.save(company);
+
+        // 2. Convertir los Sets a Lists para mantener el orden
+        List<KeyValueDto> roles = new ArrayList<>(companyDto.getRoles());
+        List<Long> userIds = new ArrayList<>(companyDto.getUserIds());
+        List<Long> permissions = new ArrayList<>(companyDto.getPermissions());
+
+        // 3. Crear las relaciones
+        for (int i = 0; i < roles.size(); i++) {
+            KeyValueDto roleDto = roles.get(i);
+            Long userId = userIds.get(i);
+            Long permissionId = permissions.get(i);
+
+            // Obtener rol
+            RoleEntity role = roleRepository.findById(roleDto.getId())
+                    .orElseThrow(() -> new EntityNotFoundException("Role not found with id: " + roleDto.getId()));
+
+            // Obtener usuario
+            UserEntity user = userRepository.findById(userId)
+                    .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
+
+            // Obtener permiso
+            PermissionsEntity permission = permissionsRepository.findById(permissionId)
+                    .orElseThrow(() -> new EntityNotFoundException("Permission not found with id: " + permissionId));
+
+            // Crear la relación
+            CompanyUserRoleEntity companyUserRole = new CompanyUserRoleEntity();
+            companyUserRole.setCompany(company);
+            companyUserRole.setUser(user);
+            companyUserRole.setRole(role);
+            companyUserRole.setPermissions(permission);
+            companyUserRole.setStatus("ACTIVE");
+            companyUserRole.setCreatedAt(LocalDateTime.now());
+
+            companyUserRepository.save(companyUserRole);
+        }
+
+        log.info("Company with tenantId {} created", uuid);
     }
+
+    public void updateCompany(Long id, CompanyDto companyDto) {
+        log.info("Updating company with id: {}", id);
+
+        CompanyEntity existingEntity = companyRepository.findById(id).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("No Company were found with the id %s", id)));
+
+        existingEntity.setCompanyName(companyDto.getName());
+        existingEntity.setCompanyDescription(companyDto.getDescription());
+        existingEntity.setCompanyAddress(companyDto.getAddress());
+        existingEntity.setCompanyRTN(companyDto.getRtn());
+        existingEntity.setType(companyDto.getType());
+        existingEntity.setCompanyEmail(companyDto.getEmail());
+        existingEntity.setCompanyPhone(companyDto.getPhone());
+        existingEntity.setCompanyWebsite(companyDto.getWebsite());
+        existingEntity.setIsActive(companyDto.isActive());
+
+        companyRepository.save(existingEntity);
+
+        log.info("Company with id {} updated successfully", id);
+    }
+
+    private void responseCompanyDto(CompanyDto dto, CompanyEntity entity) {
+        dto.setId(entity.getId());
+        dto.setName(entity.getCompanyName());
+        dto.setDescription(entity.getCompanyDescription());
+        dto.setAddress(entity.getCompanyAddress());
+        dto.setPhone(entity.getCompanyPhone());
+        dto.setEmail(entity.getCompanyEmail());
+        dto.setRtn(entity.getCompanyRTN());
+        dto.setType(Objects.equals(CompanyTypeEnum.EMPRESA.toString(), entity.getType()) ? CompanyTypeEnum.EMPRESA : CompanyTypeEnum.NATURAL);
+        dto.setTenantId(entity.getTenantId());
+        dto.setCreatedAt(entity.getCreatedAt().toLocalDate());
+        dto.setWebsite(entity.getCompanyWebsite());
+        dto.setIsActive(entity.getIsActive());
+
+        // Obtener roles, usuarios y permisos
+        List<KeyValueDto> roles = new ArrayList<>();
+        List<Long> userIds = new ArrayList<>();
+        List<Long> permissions = new ArrayList<>();
+
+        for (CompanyUserRoleEntity companyUserRole : entity.getCompanyUserEntity()) {
+            roles.add(new KeyValueDto(companyUserRole.getRole().getId(), companyUserRole.getRole().getRoleName(), companyUserRole.getRole().getRoleDescription()));
+            userIds.add(companyUserRole.getUser ().getId());
+            permissions.add(companyUserRole.getPermissions().getId());
+        }
+
+        dto.setRoles(new HashSet<>(roles));
+        dto.setUserIds(userIds);
+        dto.setPermissions(permissions);
+    }
+
 }

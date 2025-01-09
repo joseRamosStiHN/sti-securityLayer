@@ -19,8 +19,6 @@ public class CreateUserDto extends UserDto{
     @NotNull
     private String password;
 
-
-
     @NotNull
     @Override
     public String getUserName() {

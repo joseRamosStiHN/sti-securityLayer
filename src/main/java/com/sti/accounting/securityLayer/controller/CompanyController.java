@@ -35,5 +35,10 @@ public class CompanyController {
         companyService.saveCompany(companyDto);
     }
 
+    @PutMapping("/{id}")
+    public void updateCompany(@PathVariable Long id, @RequestBody CompanyDto companyDto) {
+        log.info("Updating company with id: {}", id);
+        companyService.updateCompany(id, companyDto);
+    }
 
 }
