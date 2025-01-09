@@ -1,7 +1,9 @@
 package com.sti.accounting.securityLayer.entities;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.data.annotation.CreatedDate;
@@ -13,6 +15,8 @@ import java.util.Set;
 @Setter
 @Entity
 @Table(name = "USER")
+@AllArgsConstructor
+@NoArgsConstructor
 public class UserEntity {
 
     @Id
@@ -39,6 +43,11 @@ public class UserEntity {
 
     @CreatedDate
     private LocalDateTime createdAt;
+
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    public UserEntity(Long id) {
+        this.id = id;
+    }
 }
