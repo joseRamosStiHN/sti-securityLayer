@@ -16,6 +16,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -113,12 +114,14 @@ public class CompanyService {
         log.info("Company with tenantId {} created", uuid);
     }
 
+    @Transactional
     public void updateCompany(Long id, CompanyDto companyDto) {
         log.info("Updating company with id: {}", id);
 
         CompanyEntity existingEntity = companyRepository.findById(id).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("No Company were found with the id %s", id)));
 
+        // Actualizar los campos de la compañía
         existingEntity.setCompanyName(companyDto.getName());
         existingEntity.setCompanyDescription(companyDto.getDescription());
         existingEntity.setCompanyAddress(companyDto.getAddress());
@@ -131,8 +134,66 @@ public class CompanyService {
 
         companyRepository.save(existingEntity);
 
+        // Convertir los Sets a Lists para mantener el orden
+        List<KeyValueDto> roles = new ArrayList<>(companyDto.getRoles());
+        List<Long> userIds = new ArrayList<>(companyDto.getUserIds());
+        List<Long> permissions = new ArrayList<>(companyDto.getPermissions());
+
+        // Obtener todas las relaciones existentes para esta compañía
+        List<CompanyUserRoleEntity> existingRelations = companyUserRepository.findByCompanyId(id);
+
+        // Eliminar todas las relaciones existentes que no están en el nuevo request
+        for (CompanyUserRoleEntity relation : existingRelations) {
+            if (!userIds.contains(relation.getUser().getId())) {
+                companyUserRepository.delete(relation);
+            }
+        }
+
+        // Actualizar o crear nuevas relaciones
+        for (int i = 0; i < roles.size(); i++) {
+            KeyValueDto roleDto = roles.get(i);
+            Long userId = userIds.get(i);
+            Long permissionId = permissions.get(i);
+
+            // Obtener rol
+            RoleEntity role = roleRepository.findById(roleDto.getId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Role not found with id: " + roleDto.getId()));
+
+            // Obtener usuario
+            UserEntity user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "User not found with id: " + userId));
+
+            // Obtener permiso
+            PermissionsEntity permission = permissionsRepository.findById(permissionId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Permission not found with id: " + permissionId));
+
+            // Buscar si ya existe la relación
+            CompanyUserRoleEntity existingRelation = existingRelations.stream()
+                    .filter(relation -> relation.getUser().getId().equals(userId))
+                    .findFirst()
+                    .orElse(null);
+
+            if (existingRelation != null) {
+                // Actualizar relación existente
+                existingRelation.setRole(role);
+                existingRelation.setPermissions(permission);
+                companyUserRepository.save(existingRelation);
+            } else {
+                // Crear nueva relación
+                CompanyUserRoleEntity newRelation = new CompanyUserRoleEntity();
+                newRelation.setCompany(existingEntity);
+                newRelation.setUser(user);
+                newRelation.setRole(role);
+                newRelation.setPermissions(permission);
+                newRelation.setStatus("ACTIVE");
+                newRelation.setCreatedAt(LocalDateTime.now());
+                companyUserRepository.save(newRelation);
+            }
+        }
+
         log.info("Company with id {} updated successfully", id);
     }
+
 
     private void responseCompanyDto(CompanyDto dto, CompanyEntity entity) {
         dto.setId(entity.getId());
@@ -155,7 +216,7 @@ public class CompanyService {
 
         for (CompanyUserRoleEntity companyUserRole : entity.getCompanyUserEntity()) {
             roles.add(new KeyValueDto(companyUserRole.getRole().getId(), companyUserRole.getRole().getRoleName(), companyUserRole.getRole().getRoleDescription()));
-            userIds.add(companyUserRole.getUser ().getId());
+            userIds.add(companyUserRole.getUser().getId());
             permissions.add(companyUserRole.getPermissions().getId());
         }
 

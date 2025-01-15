@@ -12,6 +12,8 @@ public interface ICompanyUserRepository extends ListCrudRepository<CompanyUserRo
 
     void deleteByUserIdAndCompanyIdAndRoleId(Long userId, Long companyId, Long roleId);
 
+    void deleteByCompanyIdAndRoleId(Long companyId, Long roleId);
+
     List<CompanyUserRoleEntity> findByCompanyId(Long companyId);
 
 
