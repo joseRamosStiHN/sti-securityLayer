@@ -54,7 +54,7 @@ public class CompanyService {
     }
 
     @Transactional
-    public void saveCompany(CompanyDto companyDto) {
+    public CompanyDto saveCompany(CompanyDto companyDto) {
         log.info("Saving company: {}", companyDto);
 
         // 1. Guardar la compañía
@@ -110,6 +110,9 @@ public class CompanyService {
         }
 
         log.info("Company with tenantId {} created", uuid);
+        CompanyDto savedCompanyDto = new CompanyDto();
+        responseCompanyDto(savedCompanyDto, company);
+        return savedCompanyDto;
     }
 
     @Transactional

@@ -30,9 +30,9 @@ public class CompanyController {
     }
 
     @PostMapping()
-    public void saveCompany(@RequestBody CompanyDto companyDto) {
+    public CompanyDto saveCompany(@RequestBody CompanyDto companyDto) {
         log.info("Saving company: {}", companyDto);
-        companyService.saveCompany(companyDto);
+        return companyService.saveCompany(companyDto);
     }
 
     @PutMapping("/{id}")
