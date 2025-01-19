@@ -1,10 +1,7 @@
 package com.sti.accounting.security_layer.service;
 
-import com.sti.accounting.security_layer.dto.CompanyDto;
+import com.sti.accounting.security_layer.dto.*;
 
-import com.sti.accounting.security_layer.dto.CompanyUserDto;
-import com.sti.accounting.security_layer.dto.CreateCompanyDto;
-import com.sti.accounting.security_layer.dto.KeyValueDto;
 import com.sti.accounting.security_layer.entities.*;
 import com.sti.accounting.security_layer.repository.*;
 import com.sti.accounting.security_layer.utils.CompanyTypeEnum;
@@ -18,6 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class CompanyService {
@@ -104,7 +102,7 @@ public class CompanyService {
 
                     CompanyUserRoleEntity companyUserRole = new CompanyUserRoleEntity();
                     companyUserRole.setCompany(company);
-                    companyUserRole.setUser (user);
+                    companyUserRole.setUser(user);
                     companyUserRole.setRole(role);
                     companyUserRole.setStatus("ACTIVE");
                     companyUserRole.setCreatedAt(LocalDateTime.now());
@@ -235,12 +233,12 @@ public class CompanyService {
         dto.setDescription(entity.getCompanyDescription());
         dto.setAddress(entity.getCompanyAddress());
         dto.setPhone(entity.getCompanyPhone());
+        dto.setWebsite(entity.getCompanyWebsite());
         dto.setEmail(entity.getCompanyEmail());
         dto.setRtn(entity.getCompanyRTN());
         dto.setType(entity.getType());
         dto.setTenantId(entity.getTenantId());
         dto.setCreatedAt(entity.getCreatedAt().toLocalDate());
-        dto.setWebsite(entity.getCompanyWebsite());
         dto.setIsActive(entity.getIsActive());
 
         if (entity.getCompanyLogo() != null) {
@@ -256,22 +254,50 @@ public class CompanyService {
                     continue;
                 }
 
-                CompanyUserDto userDto = userMap.computeIfAbsent(userRole.getUser().getId(), k -> {
+                UserEntity user = userRole.getUser(); // Obtener el usuario
+
+                // Crear o actualizar el CompanyUser Dto
+                CompanyUserDto companyUserDto = userMap.computeIfAbsent(user.getId(), k -> {
                     CompanyUserDto newUserDto = new CompanyUserDto();
-                    newUserDto.setId(userRole.getUser().getId());
-                    newUserDto.setRoles(new ArrayList<>());
+                    newUserDto.setUser(new UserDto());
+                    newUserDto.getUser().setId(user.getId());
+                    newUserDto.getUser().setUserName(user.getUserName());
+                    newUserDto.getUser().setFirstName(user.getFirstName());
+                    newUserDto.getUser().setLastName(user.getLastName());
+                    newUserDto.getUser().setEmail(user.getEmail());
+                    newUserDto.getUser().setCreatedAt(user.getCreatedAt());
+                    newUserDto.getUser().setIsActive(user.getIsActive());
+                    newUserDto.setRoles(new ArrayList<>()); // Inicializar la lista de roles
+                    newUserDto.getUser().setGlobalRoles(new ArrayList<>()); // Inicializar la lista de globalRoles
                     return newUserDto;
                 });
 
+                // Agregar el rol al usuario
                 KeyValueDto roleDto = new KeyValueDto();
                 roleDto.setId(userRole.getRole().getId());
                 roleDto.setName(userRole.getRole().getRoleName());
-                userDto.getRoles().add(roleDto);
+                roleDto.setDescription(userRole.getRole().getRoleDescription());
+                roleDto.setGlobal(userRole.getRole().getIsGlobal());
+
+                companyUserDto.getRoles().add(roleDto);
+
+                // Obtener los roles globales del usuario
+                Set<RoleEntity> globalRoles = user.getGlobalRoles();
+                List<KeyValueDto> globalRolesDto = globalRoles.stream()
+                        .map(role -> {
+                            KeyValueDto globalRoleDto = new KeyValueDto();
+                            globalRoleDto.setId(role.getId());
+                            globalRoleDto.setName(role.getRoleName());
+                            globalRoleDto.setDescription(role.getRoleDescription());
+                            globalRoleDto.setGlobal(role.getIsGlobal());
+                            return globalRoleDto;
+                        })
+                        .collect(Collectors.toList());
+
+                companyUserDto.getUser().setGlobalRoles(globalRolesDto);
             }
 
             dto.setUsers(new ArrayList<>(userMap.values()));
         }
     }
-
-
 }

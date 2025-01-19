@@ -16,5 +16,7 @@ public interface ICompanyUserRepository extends ListCrudRepository<CompanyUserRo
 
     List<CompanyUserRoleEntity> findByCompanyId(Long companyId);
 
+    List<CompanyUserRoleEntity> findByCompanyIdAndUserId(Long companyId, Long userId);
+
 
 }

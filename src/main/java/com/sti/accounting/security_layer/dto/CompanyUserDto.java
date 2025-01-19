@@ -14,5 +14,7 @@ import java.util.List;
 public class CompanyUserDto {
 
     private Long id;
+    private UserDto user;
+    private CompanyDto company;
     private List<KeyValueDto> roles;
 }

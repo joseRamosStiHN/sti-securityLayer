@@ -28,26 +28,29 @@ public class SecurityLayerApplication {
 	CommandLineRunner seed(IUserRepository userRepository, IRoleRepository roleRepository, UserService userService, IPermissionRepository permissionRepository) {
 
 		return args -> {
-			RoleEntity role = new RoleEntity();
-			if(roleRepository.count() == 0){
-				role.setRoleName("ADMIN");
-				role.setRoleDescription("Administrador del sistema");
-				role.setIsGlobal(true);
-				roleRepository.save(role);
-			}
+
+			List<RoleEntity> roles = Arrays.asList(
+					new RoleEntity(1L, "ADMINISTRADOR", true , "Rol administrador global del sistema"),
+					new RoleEntity(2L, "CONSULTA",true, "Rol de consulta global del sistema"),
+					new RoleEntity(3L, "REGISTRO CONTABLE",false, "Rol de registro contable del modulo"),
+					new RoleEntity(4L, "APROBADOR",false, "Rol de aprobacion contable del modulo"),
+					new RoleEntity(5L, "CONSULTA",false, "Rol de consulta contable del modulo")
+
+			);
+			roleRepository.saveAll(roles);
 
 			if(userRepository.count() == 0){
 				CreateUserDto createUserDto = new CreateUserDto();
-				createUserDto.setUserName("Demo");
-				createUserDto.setFirstName("Demo");
-				createUserDto.setLastName("Mode");
-				createUserDto.setEmail("user@email.com");
-				createUserDto.setPassword("demo");
-				createUserDto.setActive(true);
+				createUserDto.setUserName("Admin");
+				createUserDto.setFirstName("Administrador");
+				createUserDto.setLastName("Sistema");
+				createUserDto.setEmail("admin@email.com");
+				createUserDto.setPassword("admin");
+				createUserDto.setIsActive(true);
 				KeyValueDto roleUser = new KeyValueDto();
 				roleUser.setId(1L);
-				createUserDto.setRoles(List.of(roleUser));
-				//userService.createUser(createUserDto);
+				createUserDto.setGlobalRoles(List.of(roleUser));
+				userService.createUser(createUserDto);
 
 			}
 

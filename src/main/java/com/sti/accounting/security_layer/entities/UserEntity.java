@@ -10,6 +10,7 @@ import org.springframework.data.annotation.CreatedDate;
 
 import java.time.LocalDateTime;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -33,7 +34,7 @@ public class UserEntity {
     @Column(nullable = false)
     private String password;
 
-    private String status;
+    private Boolean isActive;
 
     @OneToMany(mappedBy = "user")
     private Set<CompanyUserRoleEntity> companyUser;
@@ -49,5 +50,12 @@ public class UserEntity {
 
     public UserEntity(Long id) {
         this.id = id;
+    }
+
+    // Método para obtener los roles globales
+    public Set<RoleEntity> getGlobalRoles() {
+        return userRoles.stream()
+                .map(UserRoleEntity::getRole) // Asumiendo que UserRoleEntity tiene un método getRole()
+                .collect(Collectors.toSet());
     }
 }

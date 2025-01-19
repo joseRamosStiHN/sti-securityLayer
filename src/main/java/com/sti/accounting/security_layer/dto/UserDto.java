@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
@@ -19,10 +19,12 @@ public class UserDto {
     private String firstName;
     private String lastName;
     private String email;
-    private String phoneNumber;
-    private LocalDate createdAt;
+    private LocalDateTime createdAt;
     private boolean isActive;
-    private List<KeyValueDto> roles;
-    private List<CompanyDto> companies;
+    private List<KeyValueDto> globalRoles;
+    private List<CompanyUserDto> companies;
 
+    public void setIsActive(boolean isActive) {
+        this.isActive = isActive;
+    }
 }
