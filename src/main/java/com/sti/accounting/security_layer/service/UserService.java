@@ -16,8 +16,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-
 
 @Service
 public class UserService {
@@ -261,7 +259,7 @@ public class UserService {
         dto.setIsActive(entity.getIsActive());
 
         // Set global roles
-        dto.setGlobalRoles(entity.getUserRoles().stream()
+        List<KeyValueDto> globalRoles = new ArrayList<>(entity.getUserRoles().stream()
                 .filter(f -> f.getRole().getIsGlobal())
                 .map(x -> new KeyValueDto(
                         x.getRole().getId(),
@@ -269,7 +267,8 @@ public class UserService {
                         x.getRole().getRoleDescription(),
                         true
                 ))
-                .collect(Collectors.toList()));
+                .toList());
+        dto.setGlobalRoles(globalRoles);
 
         // Mapa para agrupar compañías por ID
         Map<Long, CompanyUserDto> companyUserMap = new HashMap<>();
