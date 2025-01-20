@@ -47,7 +47,8 @@ public class CompanyService {
 
     public CompanyDto getCompanyById(Long id) {
         log.info("Getting company by id: {}", id);
-        CompanyEntity entity = companyRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        CompanyEntity entity = companyRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                String.format("No Company were found with the id %s", id)));
         CompanyDto dto = new CompanyDto();
         responseCompanyDto(dto, entity);
         return dto;
@@ -184,6 +185,9 @@ public class CompanyService {
                         audit.setNewStatus("INACTIVE");
                         audit.setActionDate(LocalDateTime.now());
                         companyUserRoleAuditRepository.save(audit);
+                    } else {
+                        existingRelation.setStatus("ACTIVE");
+                        companyUserRepository.save(existingRelation);
                     }
                 }
 

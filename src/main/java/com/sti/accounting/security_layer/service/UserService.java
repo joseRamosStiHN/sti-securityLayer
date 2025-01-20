@@ -69,7 +69,7 @@ public class UserService {
     }
 
 
-    public void createUser (CreateUserDto userDto) {
+    public void createUser(CreateUserDto userDto) {
         log.info("Create user");
 
         // Verificar si el usuario ya existe
@@ -109,7 +109,7 @@ public class UserService {
         log.info("Update user with id {}", id);
 
         UserEntity existingUser = userRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User  not found"));
 
         // Update basic user information
         existingUser.setUserName(userDto.getUserName());
@@ -125,6 +125,15 @@ public class UserService {
 
         userRepository.save(existingUser);
 
+        // Obtener la empresa asociada al usuario
+        List<CompanyUserRoleEntity> userCompanyRoles = companyUserRoleRepository.findByUserId(existingUser.getId());
+        if (userCompanyRoles.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No companies found for user");
+        }
+
+        // Suponiendo que solo necesitas la primera empresa
+        CompanyEntity company = userCompanyRoles.get(0).getCompany();
+
         // Update global roles
         List<UserRoleEntity> existingGlobalRoles = userRoleRepository.findByUserId(id);
 
@@ -136,6 +145,7 @@ public class UserService {
             if (!roleExists) {
                 // Create audit record
                 CompanyUserRoleAuditEntity audit = new CompanyUserRoleAuditEntity();
+                audit.setCompany(company);
                 audit.setUser(existingUser);
                 audit.setRole(existingRole.getRole());
                 audit.setAction("REMOVED");
@@ -172,6 +182,7 @@ public class UserService {
 
                 // Create audit record
                 CompanyUserRoleAuditEntity audit = new CompanyUserRoleAuditEntity();
+                audit.setCompany(company); // Aquí se asigna la empresa
                 audit.setUser(existingUser);
                 audit.setRole(roleEntity);
                 audit.setAction("ADDED");
@@ -184,12 +195,12 @@ public class UserService {
         // Update company roles
         if (userDto.getCompanies() != null) {
             for (CompanyUserDto companyUserDto : userDto.getCompanies()) {
-                CompanyEntity company = companyRepository.findById(companyUserDto.getId())
+                CompanyEntity companyEntity = companyRepository.findById(companyUserDto.getId())
                         .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
                                 "Company not found with id: " + companyUserDto.getId()));
 
                 List<CompanyUserRoleEntity> existingCompanyRoles =
-                        companyUserRoleRepository.findByCompanyIdAndUserId(company.getId(), existingUser.getId());
+                        companyUserRoleRepository.findByCompanyIdAndUserId(companyEntity.getId(), existingUser.getId());
 
                 // Deactivate company roles that are not in the new list
                 for (CompanyUserRoleEntity existingRole : existingCompanyRoles) {
@@ -202,7 +213,7 @@ public class UserService {
 
                         // Create audit record
                         CompanyUserRoleAuditEntity audit = new CompanyUserRoleAuditEntity();
-                        audit.setCompany(company);
+                        audit.setCompany(companyEntity);
                         audit.setUser(existingUser);
                         audit.setRole(existingRole.getRole());
                         audit.setAction("REMOVED");
@@ -225,7 +236,7 @@ public class UserService {
                                         "Role not found with id: " + roleDto.getId()));
 
                         CompanyUserRoleEntity companyUserRole = new CompanyUserRoleEntity();
-                        companyUserRole.setCompany(company);
+                        companyUserRole.setCompany(companyEntity);
                         companyUserRole.setUser(existingUser);
                         companyUserRole.setRole(roleEntity);
                         companyUserRole.setStatus("ACTIVE");
@@ -234,7 +245,7 @@ public class UserService {
 
                         // Create audit record
                         CompanyUserRoleAuditEntity audit = new CompanyUserRoleAuditEntity();
-                        audit.setCompany(company);
+                        audit.setCompany(companyEntity);
                         audit.setUser(existingUser);
                         audit.setRole(roleEntity);
                         audit.setAction("ADDED");
@@ -246,7 +257,7 @@ public class UserService {
             }
         }
 
-        log.info("User with id {} updated successfully", id);
+        log.info("User  with id {} updated successfully", id);
     }
 
     private UserDto convertToUserDto(UserEntity entity) {
@@ -273,7 +284,7 @@ public class UserService {
         // Mapa para agrupar compañías por ID
         Map<Long, CompanyUserDto> companyUserMap = new HashMap<>();
 
-        for (CompanyUserRoleEntity companyUserRole : entity.getCompanyUser ()) {
+        for (CompanyUserRoleEntity companyUserRole : entity.getCompanyUser()) {
             if (!"ACTIVE".equals(companyUserRole.getStatus())) {
                 continue;
             }
@@ -285,7 +296,7 @@ public class UserService {
             CompanyUserDto companyUserDto = companyUserMap.computeIfAbsent(companyId, k -> {
                 CompanyUserDto newCompanyUserDto = new CompanyUserDto();
                 newCompanyUserDto.setId(companyUserRole.getId()); // O el ID que corresponda
-                newCompanyUserDto.setUser (null); // Si no necesitas el usuario aquí
+                newCompanyUserDto.setUser(null); // Si no necesitas el usuario aquí
                 newCompanyUserDto.setRoles(new ArrayList<>()); // Inicializar la lista de roles
 
                 // Crear el CompanyDto
@@ -333,7 +344,7 @@ public class UserService {
                 userRoleKey.setRoleId(roleEntity.getId());
 
                 userRoleEntity.setRole(roleEntity);
-                userRoleEntity.setUser (user);
+                userRoleEntity.setUser(user);
                 userRoleEntity.setId(userRoleKey);
                 userRoleEntity.setCreatedAt(LocalDateTime.now());
                 userRoleRepository.save(userRoleEntity);
@@ -349,7 +360,7 @@ public class UserService {
 
                 CompanyUserRoleEntity companyUserRoleEntity = new CompanyUserRoleEntity();
                 companyUserRoleEntity.setCompany(company);
-                companyUserRoleEntity.setUser (user);
+                companyUserRoleEntity.setUser(user);
                 companyUserRoleEntity.setRole(roleEntity);
                 companyUserRoleEntity.setStatus("ACTIVE");
                 companyUserRoleEntity.setCreatedAt(LocalDateTime.now());

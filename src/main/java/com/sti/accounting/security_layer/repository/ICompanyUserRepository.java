@@ -10,9 +10,8 @@ import java.util.List;
 @Repository
 public interface ICompanyUserRepository extends ListCrudRepository<CompanyUserRoleEntity, Long> {
 
-    void deleteByUserIdAndCompanyIdAndRoleId(Long userId, Long companyId, Long roleId);
 
-    void deleteByCompanyIdAndRoleId(Long companyId, Long roleId);
+    List<CompanyUserRoleEntity> findByUserId(Long userId);
 
     List<CompanyUserRoleEntity> findByCompanyId(Long companyId);
 
