@@ -40,10 +40,10 @@ public class UserController {
         userService.createUser(createUserDto);
     }
 
-    @PutMapping("/{id}")
-    public void updateUser(@PathVariable Long id, @RequestBody CreateUserDto updateUserDto) {
+    @PutMapping("/{id}/{actionByUser}")
+    public void updateUser(@PathVariable Long id, @PathVariable Long actionByUser, @RequestBody CreateUserDto updateUserDto) {
         log.info("Update user with id {}", id);
-        userService.updateUser(id, updateUserDto);
+        userService.updateUser(id, actionByUser, updateUserDto);
     }
 
 

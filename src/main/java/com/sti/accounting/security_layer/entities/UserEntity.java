@@ -30,6 +30,8 @@ public class UserEntity {
     private String firstName;
     @Column(nullable = false)
     private String lastName;
+    private String userAddress;
+    private String userPhone;
     private String email;
     @Column(nullable = false)
     private String password;

@@ -18,6 +18,8 @@ public class UserDto {
     private String userName;
     private String firstName;
     private String lastName;
+    private String userAddress;
+    private String userPhone;
     private String email;
     private LocalDateTime createdAt;
     private boolean isActive;

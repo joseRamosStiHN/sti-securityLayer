@@ -14,6 +14,7 @@ public class CompanyController {
 
     private static final Logger log = LoggerFactory.getLogger(CompanyController.class);
     private final CompanyService companyService;
+
     public CompanyController(CompanyService companyService) {
         this.companyService = companyService;
     }
@@ -23,8 +24,9 @@ public class CompanyController {
         log.info("Getting all companies");
         return companyService.getAllCompany();
     }
+
     @GetMapping("/{id}")
-    public CompanyDto  getCompanyById(@PathVariable Long id) {
+    public CompanyDto getCompanyById(@PathVariable Long id) {
         log.info("Getting company by id: {}", id);
         return companyService.getCompanyById(id);
     }
@@ -35,10 +37,10 @@ public class CompanyController {
         return companyService.saveCompany(companyDto);
     }
 
-    @PutMapping("/{id}")
-    public void updateCompany(@PathVariable Long id, @RequestBody CompanyDto companyDto) {
+    @PutMapping("/{id}/{actionByUser}")
+    public void updateCompany(@PathVariable Long id, @PathVariable Long actionByUser, @RequestBody CompanyDto companyDto) {
         log.info("Updating company with id: {}", id);
-        companyService.updateCompany(id, companyDto);
+        companyService.updateCompany(id, actionByUser, companyDto);
     }
 
 }

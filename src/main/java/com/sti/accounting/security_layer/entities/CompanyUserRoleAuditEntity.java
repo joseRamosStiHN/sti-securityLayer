@@ -32,6 +32,6 @@ public class CompanyUserRoleAuditEntity {
     private String previousStatus;
     private String newStatus;
     private LocalDateTime actionDate;
-    private String actionBy; // Usuario que realizó el cambio
+    private Long actionByUser;
 }
 

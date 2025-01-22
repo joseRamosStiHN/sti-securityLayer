@@ -48,6 +48,8 @@ public class SecurityLayerApplication {
                 createUserDto.setFirstName("Administrador");
                 createUserDto.setLastName("Sistema");
                 createUserDto.setEmail("admin@email.com");
+                createUserDto.setUserAddress("direccion");
+                createUserDto.setUserPhone("+504 99964587");
                 createUserDto.setPassword("admin");
                 createUserDto.setIsActive(true);
                 KeyValueDto roleUser = new KeyValueDto();

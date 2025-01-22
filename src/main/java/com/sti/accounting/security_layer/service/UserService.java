@@ -12,10 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class UserService {
@@ -83,6 +80,8 @@ public class UserService {
         entity.setFirstName(userDto.getFirstName());
         entity.setLastName(userDto.getLastName());
         entity.setEmail(userDto.getEmail());
+        entity.setUserAddress(userDto.getUserAddress());
+        entity.setUserPhone(userDto.getUserPhone());
         entity.setIsActive(userDto.isActive());
         entity.setPassword(argon2Cipher.encrypt(userDto.getPassword()));
         entity.setCreatedAt(LocalDateTime.now());
@@ -105,7 +104,7 @@ public class UserService {
     }
 
     @Transactional
-    public void updateUser(Long id, CreateUserDto userDto) {
+    public void updateUser(Long id, Long actionByUser, CreateUserDto userDto) {
         log.info("Update user with id {}", id);
 
         UserEntity existingUser = userRepository.findById(id)
@@ -116,6 +115,8 @@ public class UserService {
         existingUser.setFirstName(userDto.getFirstName());
         existingUser.setLastName(userDto.getLastName());
         existingUser.setEmail(userDto.getEmail());
+        existingUser.setUserAddress(userDto.getUserAddress());
+        existingUser.setUserPhone(userDto.getUserPhone());
         existingUser.setIsActive(userDto.isActive());
 
         // Update password if provided
@@ -151,6 +152,7 @@ public class UserService {
                 audit.setAction("REMOVED");
                 audit.setPreviousStatus("ACTIVE");
                 audit.setNewStatus("INACTIVE");
+                audit.setActionByUser(actionByUser);
                 audit.setActionDate(LocalDateTime.now());
                 companyUserRoleAuditRepository.save(audit);
 
@@ -187,6 +189,7 @@ public class UserService {
                 audit.setRole(roleEntity);
                 audit.setAction("ADDED");
                 audit.setNewStatus("ACTIVE");
+                audit.setActionByUser(actionByUser);
                 audit.setActionDate(LocalDateTime.now());
                 companyUserRoleAuditRepository.save(audit);
             }
@@ -219,6 +222,7 @@ public class UserService {
                         audit.setAction("REMOVED");
                         audit.setPreviousStatus("ACTIVE");
                         audit.setNewStatus("INACTIVE");
+                        audit.setActionByUser(actionByUser);
                         audit.setActionDate(LocalDateTime.now());
                         companyUserRoleAuditRepository.save(audit);
                     }
@@ -250,6 +254,7 @@ public class UserService {
                         audit.setRole(roleEntity);
                         audit.setAction("ADDED");
                         audit.setNewStatus("ACTIVE");
+                        audit.setActionByUser(actionByUser);
                         audit.setActionDate(LocalDateTime.now());
                         companyUserRoleAuditRepository.save(audit);
                     }
@@ -267,6 +272,8 @@ public class UserService {
         dto.setFirstName(entity.getFirstName());
         dto.setLastName(entity.getLastName());
         dto.setEmail(entity.getEmail());
+        dto.setUserAddress(entity.getUserAddress());
+        dto.setUserPhone(entity.getUserPhone());
         dto.setIsActive(entity.getIsActive());
 
         // Set global roles
@@ -311,6 +318,7 @@ public class UserService {
                 companyDto.setPhone(company.getCompanyPhone());
                 companyDto.setWebsite(company.getCompanyWebsite());
                 companyDto.setTenantId(company.getTenantId());
+                companyDto.setCompanyLogo(Base64.getEncoder().encodeToString(company.getCompanyLogo()));
                 companyDto.setIsActive("ACTIVE".equals(companyUserRole.getStatus())); // O cualquier lógica que necesites
 
                 newCompanyUserDto.setCompany(companyDto); // Asignar el CompanyDto

@@ -120,7 +120,7 @@ public class CompanyService {
     }
 
     @Transactional
-    public void updateCompany(Long id, CompanyDto companyDto) {
+    public void updateCompany(Long id, Long actionByUser, CompanyDto companyDto) {
         log.info("Updating company with id: {}", id);
 
         CompanyEntity existingEntity = companyRepository.findById(id)
@@ -183,6 +183,7 @@ public class CompanyService {
                         audit.setAction("REMOVED");
                         audit.setPreviousStatus("ACTIVE");
                         audit.setNewStatus("INACTIVE");
+                        audit.setActionByUser(actionByUser);
                         audit.setActionDate(LocalDateTime.now());
                         companyUserRoleAuditRepository.save(audit);
                     } else {
@@ -220,6 +221,7 @@ public class CompanyService {
                         audit.setRole(role);
                         audit.setAction("ADDED");
                         audit.setNewStatus("ACTIVE");
+                        audit.setActionByUser(actionByUser);
                         audit.setActionDate(LocalDateTime.now());
                         companyUserRoleAuditRepository.save(audit);
                     }
