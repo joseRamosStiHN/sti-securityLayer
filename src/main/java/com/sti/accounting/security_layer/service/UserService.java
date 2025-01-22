@@ -196,6 +196,7 @@ public class UserService {
         }
 
         // Update company roles
+
         if (userDto.getCompanies() != null) {
             for (CompanyUserDto companyUserDto : userDto.getCompanies()) {
                 CompanyEntity companyEntity = companyRepository.findById(companyUserDto.getId())
@@ -205,8 +206,35 @@ public class UserService {
                 List<CompanyUserRoleEntity> existingCompanyRoles =
                         companyUserRoleRepository.findByCompanyIdAndUserId(companyEntity.getId(), existingUser.getId());
 
+                // Desactivar todos los roles existentes si se envía un array vacío
+                if (companyUserDto.getRoles() == null || companyUserDto.getRoles().isEmpty()) {
+                    for (CompanyUserRoleEntity existingRole : existingCompanyRoles) {
+                        if ("ACTIVE".equals(existingRole.getStatus())) {
+                            existingRole.setStatus("INACTIVE");
+                            companyUserRoleRepository.save(existingRole);
+
+                            // Create audit record
+                            CompanyUserRoleAuditEntity audit = new CompanyUserRoleAuditEntity();
+                            audit.setCompany(companyEntity);
+                            audit.setUser(existingUser);
+                            audit.setRole(existingRole.getRole());
+                            audit.setAction("REMOVED");
+                            audit.setPreviousStatus("ACTIVE");
+                            audit.setNewStatus("INACTIVE");
+                            audit.setActionByUser(actionByUser);
+                            audit.setActionDate(LocalDateTime.now());
+                            companyUserRoleAuditRepository.save(audit);
+                        }
+                    }
+                    continue;
+                }
+
                 // Deactivate company roles that are not in the new list
                 for (CompanyUserRoleEntity existingRole : existingCompanyRoles) {
+                    if (!"ACTIVE".equals(existingRole.getStatus())) {
+                        continue;
+                    }
+
                     boolean roleExists = companyUserDto.getRoles().stream()
                             .anyMatch(r -> r.getId().equals(existingRole.getRole().getId()));
 
@@ -291,20 +319,17 @@ public class UserService {
         // Mapa para agrupar compañías por ID
         Map<Long, CompanyUserDto> companyUserMap = new HashMap<>();
 
+        // Primero, agregar todas las compañías del usuario
         for (CompanyUserRoleEntity companyUserRole : entity.getCompanyUser()) {
-            if (!"ACTIVE".equals(companyUserRole.getStatus())) {
-                continue;
-            }
-
             CompanyEntity company = companyUserRole.getCompany();
             Long companyId = company.getId();
 
-            // Crear o obtener el CompanyUser Dto
-            CompanyUserDto companyUserDto = companyUserMap.computeIfAbsent(companyId, k -> {
+            // Crear o obtener el CompanyUser Dto solo si no existe
+            companyUserMap.computeIfAbsent(companyId, k -> {
                 CompanyUserDto newCompanyUserDto = new CompanyUserDto();
-                newCompanyUserDto.setId(companyUserRole.getId()); // O el ID que corresponda
-                newCompanyUserDto.setUser(null); // Si no necesitas el usuario aquí
-                newCompanyUserDto.setRoles(new ArrayList<>()); // Inicializar la lista de roles
+                newCompanyUserDto.setId(companyUserRole.getId());
+                newCompanyUserDto.setUser(null);
+                newCompanyUserDto.setRoles(new ArrayList<>());
 
                 // Crear el CompanyDto
                 CompanyDto companyDto = new CompanyDto();
@@ -319,20 +344,22 @@ public class UserService {
                 companyDto.setWebsite(company.getCompanyWebsite());
                 companyDto.setTenantId(company.getTenantId());
                 companyDto.setCompanyLogo(Base64.getEncoder().encodeToString(company.getCompanyLogo()));
-                companyDto.setIsActive("ACTIVE".equals(companyUserRole.getStatus())); // O cualquier lógica que necesites
+                companyDto.setIsActive(true);
 
-                newCompanyUserDto.setCompany(companyDto); // Asignar el CompanyDto
+                newCompanyUserDto.setCompany(companyDto);
                 return newCompanyUserDto;
             });
 
-            // Agregar rol a la compañía
-            KeyValueDto roleDto = new KeyValueDto(
-                    companyUserRole.getRole().getId(),
-                    companyUserRole.getRole().getRoleName(),
-                    companyUserRole.getRole().getRoleDescription(),
-                    false
-            );
-            companyUserDto.getRoles().add(roleDto);
+            // Agregar roles activos a la compañía
+            if ("ACTIVE".equals(companyUserRole.getStatus())) {
+                KeyValueDto roleDto = new KeyValueDto(
+                        companyUserRole.getRole().getId(),
+                        companyUserRole.getRole().getRoleName(),
+                        companyUserRole.getRole().getRoleDescription(),
+                        false
+                );
+                companyUserMap.get(companyId).getRoles().add(roleDto);
+            }
         }
 
         // Asignar la lista de CompanyUser Dto al DTO de usuario
