@@ -62,7 +62,7 @@ public class UserService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User  or Password not match");
         }
 
-        return convertToUserDto(entity);
+        return convertToUserDtoLogin(entity);
     }
 
 
@@ -344,6 +344,80 @@ public class UserService {
                 companyDto.setWebsite(company.getCompanyWebsite());
                 companyDto.setTenantId(company.getTenantId());
                 companyDto.setCompanyLogo(Base64.getEncoder().encodeToString(company.getCompanyLogo()));
+                companyDto.setIsActive(true);
+
+                newCompanyUserDto.setCompany(companyDto);
+                return newCompanyUserDto;
+            });
+
+            // Agregar roles activos a la compañía
+            if ("ACTIVE".equals(companyUserRole.getStatus())) {
+                KeyValueDto roleDto = new KeyValueDto(
+                        companyUserRole.getRole().getId(),
+                        companyUserRole.getRole().getRoleName(),
+                        companyUserRole.getRole().getRoleDescription(),
+                        false
+                );
+                companyUserMap.get(companyId).getRoles().add(roleDto);
+            }
+        }
+
+        // Asignar la lista de CompanyUser Dto al DTO de usuario
+        dto.setCompanies(new ArrayList<>(companyUserMap.values()));
+        return dto;
+    }
+
+    private UserDto convertToUserDtoLogin(UserEntity entity) {
+        UserDto dto = new UserDto();
+        dto.setId(entity.getId());
+        dto.setUserName(entity.getUserName());
+        dto.setFirstName(entity.getFirstName());
+        dto.setLastName(entity.getLastName());
+        dto.setEmail(entity.getEmail());
+        dto.setUserAddress(entity.getUserAddress());
+        dto.setUserPhone(entity.getUserPhone());
+        dto.setIsActive(entity.getIsActive());
+
+        // Set global roles
+        List<KeyValueDto> globalRoles = new ArrayList<>(entity.getUserRoles().stream()
+                .filter(f -> f.getRole().getIsGlobal())
+                .map(x -> new KeyValueDto(
+                        x.getRole().getId(),
+                        x.getRole().getRoleName(),
+                        x.getRole().getRoleDescription(),
+                        true
+                ))
+                .toList());
+        dto.setGlobalRoles(globalRoles);
+
+        // Mapa para agrupar compañías por ID
+        Map<Long, CompanyUserDto> companyUserMap = new HashMap<>();
+
+        // Primero, agregar todas las compañías del usuario
+        for (CompanyUserRoleEntity companyUserRole : entity.getCompanyUser()) {
+            CompanyEntity company = companyUserRole.getCompany();
+            Long companyId = company.getId();
+
+            // Crear o obtener el CompanyUser Dto solo si no existe
+            companyUserMap.computeIfAbsent(companyId, k -> {
+                CompanyUserDto newCompanyUserDto = new CompanyUserDto();
+                newCompanyUserDto.setId(companyUserRole.getId());
+                newCompanyUserDto.setUser(null);
+                newCompanyUserDto.setRoles(new ArrayList<>());
+
+                // Crear el CompanyDto
+                CompanyDto companyDto = new CompanyDto();
+                companyDto.setId(companyId);
+                companyDto.setName(company.getCompanyName());
+                companyDto.setDescription(company.getCompanyDescription());
+                companyDto.setAddress(company.getCompanyAddress());
+                companyDto.setRtn(company.getCompanyRTN());
+                companyDto.setType(company.getType());
+                companyDto.setEmail(company.getCompanyEmail());
+                companyDto.setPhone(company.getCompanyPhone());
+                companyDto.setWebsite(company.getCompanyWebsite());
+                companyDto.setTenantId(company.getTenantId());
+                //companyDto.setCompanyLogo(Base64.getEncoder().encodeToString(company.getCompanyLogo()));
                 companyDto.setIsActive(true);
 
                 newCompanyUserDto.setCompany(companyDto);
