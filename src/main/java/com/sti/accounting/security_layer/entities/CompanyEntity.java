@@ -32,7 +32,7 @@ public class CompanyEntity {
     private CompanyTypeEnum type;
 
     @Lob
-    @Column(name = "COMPANY_LOGO", columnDefinition="BLOB")
+    @Column(name = "COMPANY_LOGO", columnDefinition="LONGBLOB")
     private byte[] companyLogo;
 
     private String companyEmail;
