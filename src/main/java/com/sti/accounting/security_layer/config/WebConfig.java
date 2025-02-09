@@ -34,7 +34,7 @@ public class WebConfig  {
     public UrlBasedCorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        config.setAllowedOrigins(List.of(allowedOrigins.split(","))); // Ajustar para producción DDoS
+        config.setAllowedOrigins(List.of("https://stidev.casa")); // Ajustar para producción DDoS
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
 
