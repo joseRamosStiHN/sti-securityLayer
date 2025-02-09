@@ -1,4 +1,4 @@
-name: Accounting build and Deploy
+name: Security Layer build and Deploy
 
 on:
   push:
