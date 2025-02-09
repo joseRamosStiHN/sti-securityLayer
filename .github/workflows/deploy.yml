@@ -31,8 +31,8 @@ jobs:
           sed -i "/^server.ssl.key-store-password=/c\server.ssl.key-store-password=${{ secrets.KEY_STORE_PASSWORD }}" $CONFIG_FILE || echo "server.ssl.key-store-password=${{ secrets.KEY_STORE_PASSWORD }}" >> $CONFIG_FILE
           sed -i "/^server.ssl.key-store-type=/c\server.ssl.key-store-type=PKCS12" $CONFIG_FILE || echo "server.ssl.key-store-type=PKCS12" >> $CONFIG_FILE
           sed -i "/^server.ssl.key-alias=/c\server.ssl.key-alias=tomcat" $CONFIG_FILE || echo "server.ssl.key-alias=tomcat" >> $CONFIG_FILE
-          
-          sed -i "/^server.port=/c\server.port=8443" $CONFIG_FILE || echo "server.port=8443" >> $CONFIG_FILE
+
+          sed -i "/^server.port=/c\server.port=8081" $CONFIG_FILE || echo "server.port=8081" >> $CONFIG_FILE
 
           # Verificar contenido final del archivo
           cat $CONFIG_FILE
