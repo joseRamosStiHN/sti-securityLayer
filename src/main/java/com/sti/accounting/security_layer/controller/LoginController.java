@@ -39,7 +39,10 @@ public class LoginController {
 
         Cookie cookie = new Cookie("x-auth", token);
         cookie.setHttpOnly(true);
+        cookie.setPath("/");
+        cookie.setMaxAge(60 * 60 * 24 * 30);
         cookie.setSecure(isHttps);
+       // cookie.setAttribute("SameSite", "Strict");
         httpServletResponse.addCookie(cookie);
 
         return userDto;
