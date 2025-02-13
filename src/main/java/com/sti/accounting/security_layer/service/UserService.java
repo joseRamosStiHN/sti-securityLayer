@@ -437,7 +437,9 @@ public class UserService {
         }
 
         // Asignar la lista de CompanyUser Dto al DTO de usuario
-        dto.setCompanies(new ArrayList<>(companyUserMap.values()));
+
+// Cuando se tiene todas las companias da un error de errror de header muy extenso 
+//        dto.setCompanies(new ArrayList<>(companyUserMap.values()));
         return dto;
     }
 
