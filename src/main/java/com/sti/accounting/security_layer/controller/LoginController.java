@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,6 +25,7 @@ public class LoginController {
 
     private final LoginService loginService;
     private final JwtService jwtService;
+
     public LoginController(LoginService loginService, JwtService jwtService) {
         this.loginService = loginService;
         this.jwtService = jwtService;
@@ -48,5 +50,16 @@ public class LoginController {
         return userDto;
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(HttpServletResponse httpServletResponse) {
 
+        Cookie cookie = new Cookie("x-auth", null);
+        cookie.setHttpOnly(true);
+        cookie.setPath("/");
+        cookie.setMaxAge(0);
+        cookie.setSecure(isHttps);
+        httpServletResponse.addCookie(cookie);
+
+        return ResponseEntity.ok("Logout exitoso");
+    }
 }
