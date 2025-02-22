@@ -7,12 +7,14 @@ import com.sti.accounting.security_layer.repository.*;
 import com.sti.accounting.security_layer.utils.CompanyTypeEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.data.domain.Page;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -44,6 +46,33 @@ public class CompanyService {
             return dto;
         }).toList();
     }
+
+    public Page<CompanyPaginationDto> getAllCompanyByUser(Integer page, Integer size, Long userId) {
+        Page<CompanyEntity> companyPage = companyRepository.findCompanyByUser(userId, PageRequest.of(page, size));
+
+        List<CompanyPaginationDto> companyDtos = companyPage.getContent().stream().map(x -> {
+            CompanyPaginationDto dto = new CompanyPaginationDto();
+            responseCompanyPaginationDto(dto, x);
+            return dto;
+        }).toList();
+
+
+        return new PageImpl<>(companyDtos, PageRequest.of(page, size), companyPage.getTotalElements());
+    }
+
+
+    public byte[]  getCompanyLogoById(Long id ) {
+        log.info("Getting company by id: {}", id);
+
+        CompanyEntity entity = companyRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                String.format("No Company were found with the id %s", id)));
+
+        CompanyDto dto = new CompanyDto();
+        responseCompanyDto(dto, entity);
+        return entity.getCompanyLogo();
+
+    }
+
 
     public CompanyDto getCompanyById(Long id) {
         log.info("Getting company by id: {}", id);
@@ -248,7 +277,7 @@ public class CompanyService {
         dto.setIsActive(entity.getIsActive());
 
         if (entity.getCompanyLogo() != null) {
-            dto.setCompanyLogo(Base64.getEncoder().encodeToString(entity.getCompanyLogo()));
+//            dto.setCompanyLogo(Base64.getEncoder().encodeToString(entity.getCompanyLogo()));
         }
 
         // Agregar usuarios y sus roles
@@ -305,5 +334,33 @@ public class CompanyService {
 
             dto.setUsers(new ArrayList<>(userMap.values()));
         }
+    }
+
+
+    private void responseCompanyPaginationDto(CompanyPaginationDto dto, CompanyEntity entity) {
+        dto.setId(entity.getId());
+        dto.setName(entity.getCompanyName());
+        dto.setDescription(entity.getCompanyDescription());
+        dto.setAddress(entity.getCompanyAddress());
+        dto.setPhone(entity.getCompanyPhone());
+        dto.setWebsite(entity.getCompanyWebsite());
+        dto.setEmail(entity.getCompanyEmail());
+        dto.setRtn(entity.getCompanyRTN());
+        dto.setType(entity.getType());
+        dto.setTenantId(entity.getTenantId());
+        dto.setCreatedAt(entity.getCreatedAt().toLocalDate());
+        dto.setRoles(getRolesByCompanies(entity.getId()));
+
+    }
+
+    private   List<KeyValueDto> getRolesByCompanies(Long id){
+        return  roleRepository.getRoleByCompany(id).stream().map( r -> {
+            KeyValueDto keyValueDto = new KeyValueDto();
+            keyValueDto.setId(r.getId());
+            keyValueDto.setName(r.getRoleName());
+            keyValueDto.setDescription(r.getRoleDescription());
+            keyValueDto.setGlobal(r.getIsGlobal());
+            return keyValueDto;
+        }).toList();
     }
 }
