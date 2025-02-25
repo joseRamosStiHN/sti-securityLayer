@@ -17,11 +17,9 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class CompanyPaginationDto {
-
+public class CompanyByUser {
 
     private Long id;
-
     @NotNull
     private String name;
     private String description;

@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+
 @Service
 public class CompanyService {
 
@@ -30,12 +31,14 @@ public class CompanyService {
     private final IUserRepository userRepository;
     private final ICompanyUserRoleAuditRepository companyUserRoleAuditRepository;
 
+
     public CompanyService(ICompanyRepository companyRepository, ICompanyUserRepository companyUserRepository, IRoleRepository roleRepository, IUserRepository userRepository, ICompanyUserRoleAuditRepository companyUserRoleAuditRepository) {
         this.companyRepository = companyRepository;
         this.companyUserRepository = companyUserRepository;
         this.roleRepository = roleRepository;
         this.userRepository = userRepository;
         this.companyUserRoleAuditRepository = companyUserRoleAuditRepository;
+
     }
 
     public List<CompanyDto> getAllCompany() {
@@ -47,17 +50,20 @@ public class CompanyService {
         }).toList();
     }
 
-    public Page<CompanyPaginationDto> getAllCompanyByUser(Integer page, Integer size, Long userId) {
+    public Page<CompanyByUser> getAllCompanyByUser(Integer page, Integer size, Long userId) {
+
         Page<CompanyEntity> companyPage = companyRepository.findCompanyByUser(userId, PageRequest.of(page, size));
 
-        List<CompanyPaginationDto> companyDtos = companyPage.getContent().stream().map(x -> {
-            CompanyPaginationDto dto = new CompanyPaginationDto();
-            responseCompanyPaginationDto(dto, x);
-            return dto;
-        }).toList();
 
+        List<CompanyByUser> companyDtos = companyPage.getContent().stream().map(this::responseCompanyPaginationDto).toList();
 
         return new PageImpl<>(companyDtos, PageRequest.of(page, size), companyPage.getTotalElements());
+    }
+
+    public CompanyByUser getCompanyByUser(Long userId, Long companyId) {
+        CompanyEntity company = companyRepository.getCompanyByIdAndUser(companyId, userId);
+        return responseCompanyPaginationDto(company);
+
     }
 
 
@@ -337,7 +343,9 @@ public class CompanyService {
     }
 
 
-    private void responseCompanyPaginationDto(CompanyPaginationDto dto, CompanyEntity entity) {
+    private CompanyByUser responseCompanyPaginationDto(CompanyEntity entity) {
+
+        CompanyByUser dto = new CompanyByUser();
         dto.setId(entity.getId());
         dto.setName(entity.getCompanyName());
         dto.setDescription(entity.getCompanyDescription());
@@ -350,6 +358,8 @@ public class CompanyService {
         dto.setTenantId(entity.getTenantId());
         dto.setCreatedAt(entity.getCreatedAt().toLocalDate());
         dto.setRoles(getRolesByCompanies(entity.getId()));
+
+        return  dto;
 
     }
 

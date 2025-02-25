@@ -16,8 +16,8 @@ public interface ICompanyRepository extends ListCrudRepository<CompanyEntity, Lo
     @Query("SELECT c FROM CompanyEntity c WHERE EXISTS (SELECT cru FROM c.companyUserEntity cru WHERE cru.user.id = :userId and cru.status = 'ACTIVE' ) And c.status = 'ACTIVE'")
     Page<CompanyEntity> findCompanyByUser(Long userId, Pageable pageable);
 
-    @Query("SELECT COUNT(c) FROM CompanyEntity c JOIN c.companyUserEntity cru WHERE cru.company.id = c.id AND cru.user.id = :userId")
-    long countCompaniesByUser(Long userId);
+    @Query("SELECT c FROM CompanyEntity c JOIN FETCH c.companyUserEntity cru WHERE cru.user.id = :userId and c.id =:companyId and cru.status = 'ACTIVE' and c.status = 'ACTIVE' ")
+    CompanyEntity getCompanyByIdAndUser(Long companyId , Long userId);
 
 }
 

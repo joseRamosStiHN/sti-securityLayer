@@ -1,14 +1,13 @@
 package com.sti.accounting.security_layer.controller;
 
 
+import com.sti.accounting.security_layer.dto.CompanyByUser;
 import com.sti.accounting.security_layer.dto.CompanyDto;
-import com.sti.accounting.security_layer.dto.CompanyPaginationDto;
-import com.sti.accounting.security_layer.dto.UserDto;
 import com.sti.accounting.security_layer.dto.pageble.PageResponse;
 import com.sti.accounting.security_layer.dto.pageble.PageResponseDto;
+import com.sti.accounting.security_layer.service.AuthService;
 import com.sti.accounting.security_layer.service.CompanyService;
 
-import com.sti.accounting.security_layer.utils.JwtUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -24,9 +23,11 @@ public class CompanyController {
 
     private static final Logger log = LoggerFactory.getLogger(CompanyController.class);
     private final CompanyService companyService;
+    private final AuthService authService;
 
-    public CompanyController(CompanyService companyService) {
+    public CompanyController(CompanyService companyService, AuthService authService) {
         this.companyService = companyService;
+        this.authService = authService;
     }
 
     @GetMapping("/")
@@ -36,18 +37,25 @@ public class CompanyController {
     }
 
     @GetMapping("/companyByUser")
-    public ResponseEntity<? extends PageResponse<CompanyPaginationDto>> getAllCompanyByUser(
+    public ResponseEntity<? extends PageResponse<CompanyByUser>> getAllCompanyByUser(
             @RequestParam(required = false, defaultValue = "0") Integer page ,
-            @RequestParam(required = false, defaultValue = "9") Integer size,
-            @CookieValue("x-auth") String authorization) {
+            @RequestParam(required = false, defaultValue = "9") Integer size) {
         
-        UserDto user = JwtUtil.getUserDetails(authorization);
-        Page<CompanyPaginationDto> company = companyService.getAllCompanyByUser(page, size, user.getId());
+        Long userId = this.authService.getUserId();
+        Page<CompanyByUser> company = companyService.getAllCompanyByUser(page, size, userId);
         
-        PageResponseDto<CompanyPaginationDto> pageResponseDto = new PageResponseDto<>();
+        PageResponseDto<CompanyByUser> pageResponseDto = new PageResponseDto<>();
 
         return pageResponseDto.buildResponseEntity(company.getSize(), company.getNumberOfElements(),
                 company.getTotalPages(), company.getNumber(), company.getContent());
+
+    }
+
+    @GetMapping("/{id}/user")
+    public CompanyByUser getCompanyByUser(@PathVariable Long id ) {
+        Long userId = this.authService.getUserId();
+       return companyService.getCompanyByUser(userId,id);
+
 
     }
 
@@ -58,7 +66,7 @@ public class CompanyController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok()
-                .contentType(MediaType.ALL)
+                .contentType(MediaType.IMAGE_PNG)
                 .body(logo);
     }
 
