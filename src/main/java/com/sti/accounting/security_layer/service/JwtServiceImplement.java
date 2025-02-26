@@ -19,7 +19,9 @@ import java.util.function.Function;
 
 @Service
 public class JwtServiceImplement {
+
     private static final Logger logger = LoggerFactory.getLogger(JwtServiceImplement.class);
+
     @Value("${app.token.secret.key}")
     private String secretKey;
 
@@ -67,11 +69,6 @@ public class JwtServiceImplement {
                 .parseSignedClaims(token)
                 .getPayload();
     }
-
-//    private Key getSigningKey() {
-//        byte[] keyBytes = secretKey.getBytes();
-//        return Keys.hmacShaKeyFor(keyBytes);
-//    }
 
     private SecretKey getSigningKey() {
         byte[] keyBytes = secretKey.getBytes(StandardCharsets.UTF_8);

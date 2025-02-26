@@ -6,8 +6,6 @@ import com.sti.accounting.security_layer.dto.UserDto;
 import com.sti.accounting.security_layer.service.LoginService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -20,8 +18,6 @@ public class LoginController {
 
     @Value("${app.https}")
     private boolean isHttps;
-
-    private static final Logger log = LoggerFactory.getLogger(LoginController.class);
 
     private final LoginService loginService;
     private final JwtService jwtService;
@@ -44,7 +40,6 @@ public class LoginController {
         cookie.setPath("/");
         cookie.setMaxAge(60 * 60 * 24 * 30);
         cookie.setSecure(isHttps);
-       // cookie.setAttribute("SameSite", "Strict");
         httpServletResponse.addCookie(cookie);
 
         return userDto;

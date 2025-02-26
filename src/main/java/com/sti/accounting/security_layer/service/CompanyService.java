@@ -23,8 +23,8 @@ import java.util.stream.Collectors;
 @Service
 public class CompanyService {
 
-
     private static final Logger log = LoggerFactory.getLogger(CompanyService.class);
+
     private final ICompanyRepository companyRepository;
     private final ICompanyUserRepository companyUserRepository;
     private final IRoleRepository roleRepository;
@@ -67,7 +67,7 @@ public class CompanyService {
     }
 
 
-    public byte[]  getCompanyLogoById(Long id ) {
+    public byte[] getCompanyLogoById(Long id) {
         log.info("Getting company by id: {}", id);
 
         CompanyEntity entity = companyRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -282,10 +282,6 @@ public class CompanyService {
         dto.setCreatedAt(entity.getCreatedAt().toLocalDate());
         dto.setIsActive(entity.getIsActive());
 
-        if (entity.getCompanyLogo() != null) {
-//            dto.setCompanyLogo(Base64.getEncoder().encodeToString(entity.getCompanyLogo()));
-        }
-
         // Agregar usuarios y sus roles
         if (entity.getCompanyUserEntity() != null) {
             Map<Long, CompanyUserDto> userMap = new HashMap<>();
@@ -333,7 +329,7 @@ public class CompanyService {
                             globalRoleDto.setGlobal(role.getIsGlobal());
                             return globalRoleDto;
                         })
-                        .collect(Collectors.toList());
+                        .toList();
 
                 companyUserDto.getUser().setGlobalRoles(globalRolesDto);
             }
@@ -359,12 +355,12 @@ public class CompanyService {
         dto.setCreatedAt(entity.getCreatedAt().toLocalDate());
         dto.setRoles(getRolesByCompanies(entity.getId()));
 
-        return  dto;
+        return dto;
 
     }
 
-    private   List<KeyValueDto> getRolesByCompanies(Long id){
-        return  roleRepository.getRoleByCompany(id).stream().map( r -> {
+    private List<KeyValueDto> getRolesByCompanies(Long id) {
+        return roleRepository.getRoleByCompany(id).stream().map(r -> {
             KeyValueDto keyValueDto = new KeyValueDto();
             keyValueDto.setId(r.getId());
             keyValueDto.setName(r.getRoleName());

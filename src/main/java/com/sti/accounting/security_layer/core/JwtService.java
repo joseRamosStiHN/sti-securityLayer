@@ -1,5 +1,7 @@
 package com.sti.accounting.security_layer.core;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sti.accounting.security_layer.dto.UserDto;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
@@ -14,10 +16,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
-// tenanId
+
 @Service
 public class JwtService {
-    private static final Logger log = LoggerFactory.getLogger(JwtService.class);
+    private static final Logger logger = LoggerFactory.getLogger(JwtService.class);
 
     @Value("${app.token.time.expiration}")
     private Long jwtExpirationHours;
@@ -25,41 +27,43 @@ public class JwtService {
     @Value("${app.token.secret.key}")
     private String jwtSecret;
 
-    public JwtService() {
-    }
-
-    public String generateToken(UserDto user){
+    public String generateToken(UserDto user) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("user", user);
-        return generateToken(claims, user);
+        return buildToken(claims, user);
     }
+
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
-    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        final Claims claims = extractAllClaims(token);
-        return claimsResolver.apply(claims);
-    }
-    public boolean isTokenValid(String token, UserDto userInfo) {
-        final String username = extractUsername(token);
-        return (username.equals(userInfo.getUserName())) && !isTokenExpired(token);
+
+    public UserDto getUserDetails(String token) {
+        Claims claims = extractAllClaims(token);
+        ObjectMapper objectMapper = new ObjectMapper()
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        Map<String, Object> userMap = claims.get("user", Map.class);
+        return objectMapper.convertValue(userMap, UserDto.class);
     }
 
-
-    public String generateToken(Map<String, Object> extraClaims, UserDto userInfo) {
-        return buildToken(extraClaims, userInfo);
+    public boolean isTokenValid(String token) {
+        try {
+            return !isTokenExpired(token);
+        } catch (Exception e) {
+            logger.error("Error validating token: ", e);
+            return false;
+        }
     }
 
     private String buildToken(Map<String, Object> extraClaims, UserDto userInfo) {
-        return Jwts.builder().claims(extraClaims)
+        return Jwts.builder()
+                .claims(extraClaims)
                 .subject(userInfo.getUserName())
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * jwtExpirationHours))
                 .signWith(getSigningKey())
                 .compact();
-
     }
-
 
     private boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
@@ -69,12 +73,17 @@ public class JwtService {
         return extractClaim(token, Claims::getExpiration);
     }
 
+    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+        final Claims claims = extractAllClaims(token);
+        return claimsResolver.apply(claims);
+    }
+
     private Claims extractAllClaims(String token) {
-       return Jwts.parser()
-               .verifyWith(getSigningKey())
-               .build()
-               .parseSignedClaims(token)
-               .getPayload();
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
     private SecretKey getSigningKey() {

@@ -1,9 +1,6 @@
 package com.sti.accounting.security_layer.filters;
 
-
 import com.sti.accounting.security_layer.core.CustomUserDetails;
-
-
 import com.sti.accounting.security_layer.dto.UserDto;
 import com.sti.accounting.security_layer.service.JwtServiceImplement;
 import jakarta.servlet.FilterChain;
@@ -17,19 +14,34 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
+    private static final String[] PUBLIC_ROUTES = {
+            "/api/v1/login",
+            "/api/v1/login/**"
+    };
 
     private final JwtServiceImplement jwtService;
+    private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     public JwtAuthenticationFilter(JwtServiceImplement jwtService) {
         this.jwtService = jwtService;
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getServletPath();
+        return Arrays.stream(PUBLIC_ROUTES)
+                .anyMatch(p -> pathMatcher.match(p, path));
     }
 
     @Override
@@ -38,34 +50,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain
     ) throws ServletException, IOException {
-
-
         String token = extractTokenFromCookie(request);
 
         // if token is null or empty return with unauthorized
         if (token == null || token.isEmpty()) {
             logger.info("token not exist");
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"error\": \"Error el token no proved\"}");
-            response.getWriter().flush();
-            response.getWriter().close();
+            sendErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED, "Error: token no encontrado");
             return;
         }
 
-//         validate token
+        // validate token
         if (!jwtService.isTokenValid(token)) {
             logger.info("token expired");
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"error\": \"Error el token a expirado\"}");
-            response.getWriter().flush();
-            response.getWriter().close();
+            sendErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED, "Error: el token ha expirado");
             return;
         }
 
-
-        try{
+        try {
             UserDto userDetails = jwtService.getUserDetails(token);
 
             // Global roles of user
@@ -75,8 +76,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             // create custom user
             CustomUserDetails customUserDetails = new CustomUserDetails(userDetails, authorities);
-            //create SecurityContextHolder
 
+            //create SecurityContextHolder
             UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                     customUserDetails,
                     null,
@@ -84,18 +85,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             );
 
             SecurityContextHolder.getContext().setAuthentication(authToken);
+            filterChain.doFilter(request, response);
+
         } catch (RuntimeException e) {
             logger.error("Error al autenticar usuario desde token: {}", e.getMessage());
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"error\": \"Error al autenticar usuario desde token\"}");
-            response.getWriter().flush();
-            response.getWriter().close();
-            return;
+            sendErrorResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                    "Error al autenticar usuario desde token");
         }
+    }
 
-        filterChain.doFilter(request, response);
-
+    private void sendErrorResponse(HttpServletResponse response, int status, String message) throws IOException {
+        response.setStatus(status);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        response.getWriter().write(String.format("{\"error\": \"%s\"}", message));
+        response.getWriter().flush();
+        response.getWriter().close();
     }
 
     private String extractTokenFromCookie(HttpServletRequest request) {

@@ -1,6 +1,5 @@
 package com.sti.accounting.security_layer.service;
 
-
 import com.sti.accounting.security_layer.core.CustomUserDetails;
 import com.sti.accounting.security_layer.dto.KeyValueDto;
 import org.springframework.security.core.Authentication;
@@ -19,7 +18,7 @@ public class AuthService {
             return (CustomUserDetails) authentication.getPrincipal();
         }
 
-        throw new RuntimeException("Usuario no autenticado o no válido");
+        throw new RuntimeException("Unauthenticated or invalid user");
     }
 
     public String getUsername() {

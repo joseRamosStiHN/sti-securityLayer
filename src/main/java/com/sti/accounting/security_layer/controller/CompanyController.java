@@ -36,7 +36,7 @@ public class CompanyController {
         return companyService.getAllCompany();
     }
 
-    @GetMapping("/companyByUser")
+    @GetMapping("/company-user")
     public ResponseEntity<? extends PageResponse<CompanyByUser>> getAllCompanyByUser(
             @RequestParam(required = false, defaultValue = "0") Integer page ,
             @RequestParam(required = false, defaultValue = "9") Integer size) {
@@ -51,7 +51,7 @@ public class CompanyController {
 
     }
 
-    @GetMapping("/{id}/user")
+    @GetMapping("/user/{id}")
     public CompanyByUser getCompanyByUser(@PathVariable Long id ) {
         Long userId = this.authService.getUserId();
        return companyService.getCompanyByUser(userId,id);
@@ -59,7 +59,7 @@ public class CompanyController {
 
     }
 
-    @GetMapping("/{id}/logo")
+    @GetMapping("/logo/{id}")
     public ResponseEntity<byte[]> getCompanyLogo(@PathVariable Long id) {
         byte[] logo = companyService.getCompanyLogoById(id);
         if (logo == null) {
