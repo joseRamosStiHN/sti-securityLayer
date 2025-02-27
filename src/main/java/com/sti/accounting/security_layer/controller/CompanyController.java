@@ -11,11 +11,14 @@ import com.sti.accounting.security_layer.service.CompanyService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
+import org.springframework.http.CacheControl;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/api/v1/company")
@@ -61,12 +64,19 @@ public class CompanyController {
 
     @GetMapping("/logo/{id}")
     public ResponseEntity<byte[]> getCompanyLogo(@PathVariable Long id) {
+        log.info("Getting logo by company "+ id);
+
         byte[] logo = companyService.getCompanyLogoById(id);
         if (logo == null) {
             return ResponseEntity.notFound().build();
         }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setCacheControl(CacheControl.maxAge(30, TimeUnit.DAYS).cachePublic().getHeaderValue());
+        headers.setContentType(MediaType.IMAGE_PNG);
+
         return ResponseEntity.ok()
-                .contentType(MediaType.IMAGE_PNG)
+                .headers(headers)
                 .body(logo);
     }
 
