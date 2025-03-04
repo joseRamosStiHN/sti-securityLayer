@@ -7,26 +7,30 @@ import com.sti.accounting.security_layer.repository.*;
 import com.sti.accounting.security_layer.utils.CompanyTypeEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.data.domain.Page;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+
 @Service
 public class CompanyService {
 
-
     private static final Logger log = LoggerFactory.getLogger(CompanyService.class);
+
     private final ICompanyRepository companyRepository;
     private final ICompanyUserRepository companyUserRepository;
     private final IRoleRepository roleRepository;
     private final IUserRepository userRepository;
     private final ICompanyUserRoleAuditRepository companyUserRoleAuditRepository;
+
 
     public CompanyService(ICompanyRepository companyRepository, ICompanyUserRepository companyUserRepository, IRoleRepository roleRepository, IUserRepository userRepository, ICompanyUserRoleAuditRepository companyUserRoleAuditRepository) {
         this.companyRepository = companyRepository;
@@ -34,6 +38,7 @@ public class CompanyService {
         this.roleRepository = roleRepository;
         this.userRepository = userRepository;
         this.companyUserRoleAuditRepository = companyUserRoleAuditRepository;
+
     }
 
     public List<CompanyDto> getAllCompany() {
@@ -44,6 +49,36 @@ public class CompanyService {
             return dto;
         }).toList();
     }
+
+    public Page<CompanyByUser> getAllCompanyByUser(Integer page, Integer size, Long userId) {
+
+        Page<CompanyEntity> companyPage = companyRepository.findCompanyByUser(userId, PageRequest.of(page, size));
+
+
+        List<CompanyByUser> companyDtos = companyPage.getContent().stream().map(this::responseCompanyPaginationDto).toList();
+
+        return new PageImpl<>(companyDtos, PageRequest.of(page, size), companyPage.getTotalElements());
+    }
+
+    public CompanyByUser getCompanyByUser(Long userId, Long companyId) {
+        CompanyEntity company = companyRepository.getCompanyByIdAndUser(companyId, userId);
+        return responseCompanyPaginationDto(company);
+
+    }
+
+
+    public byte[] getCompanyLogoById(Long id) {
+        log.info("Getting company by id: {}", id);
+
+        CompanyEntity entity = companyRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                String.format("No Company were found with the id %s", id)));
+
+        CompanyDto dto = new CompanyDto();
+        responseCompanyDto(dto, entity);
+        return entity.getCompanyLogo();
+
+    }
+
 
     public CompanyDto getCompanyById(Long id) {
         log.info("Getting company by id: {}", id);
@@ -247,10 +282,6 @@ public class CompanyService {
         dto.setCreatedAt(entity.getCreatedAt().toLocalDate());
         dto.setIsActive(entity.getIsActive());
 
-        if (entity.getCompanyLogo() != null) {
-            dto.setCompanyLogo(Base64.getEncoder().encodeToString(entity.getCompanyLogo()));
-        }
-
         // Agregar usuarios y sus roles
         if (entity.getCompanyUserEntity() != null) {
             Map<Long, CompanyUserDto> userMap = new HashMap<>();
@@ -298,12 +329,44 @@ public class CompanyService {
                             globalRoleDto.setGlobal(role.getIsGlobal());
                             return globalRoleDto;
                         })
-                        .collect(Collectors.toList());
+                        .toList();
 
                 companyUserDto.getUser().setGlobalRoles(globalRolesDto);
             }
 
             dto.setUsers(new ArrayList<>(userMap.values()));
         }
+    }
+
+
+    private CompanyByUser responseCompanyPaginationDto(CompanyEntity entity) {
+
+        CompanyByUser dto = new CompanyByUser();
+        dto.setId(entity.getId());
+        dto.setName(entity.getCompanyName());
+        dto.setDescription(entity.getCompanyDescription());
+        dto.setAddress(entity.getCompanyAddress());
+        dto.setPhone(entity.getCompanyPhone());
+        dto.setWebsite(entity.getCompanyWebsite());
+        dto.setEmail(entity.getCompanyEmail());
+        dto.setRtn(entity.getCompanyRTN());
+        dto.setType(entity.getType());
+        dto.setTenantId(entity.getTenantId());
+        dto.setCreatedAt(entity.getCreatedAt().toLocalDate());
+        dto.setRoles(getRolesByCompanies(entity.getId()));
+
+        return dto;
+
+    }
+
+    private List<KeyValueDto> getRolesByCompanies(Long id) {
+        return roleRepository.getRoleByCompany(id).stream().map(r -> {
+            KeyValueDto keyValueDto = new KeyValueDto();
+            keyValueDto.setId(r.getId());
+            keyValueDto.setName(r.getRoleName());
+            keyValueDto.setDescription(r.getRoleDescription());
+            keyValueDto.setGlobal(r.getIsGlobal());
+            return keyValueDto;
+        }).toList();
     }
 }

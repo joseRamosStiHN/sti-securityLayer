@@ -1,5 +1,6 @@
 package com.sti.accounting.security_layer.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.sti.accounting.security_layer.utils.CompanyTypeEnum;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -15,6 +16,7 @@ import java.util.Objects;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class CompanyDto {
     private Long id;
 
