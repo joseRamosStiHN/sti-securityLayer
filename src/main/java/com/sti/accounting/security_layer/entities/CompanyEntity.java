@@ -19,7 +19,7 @@ import java.util.Set;
 @Table(name = "COMPANY")
 @NoArgsConstructor
 @AllArgsConstructor
-public class CompanyEntity {
+public class CompanyEntity extends Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

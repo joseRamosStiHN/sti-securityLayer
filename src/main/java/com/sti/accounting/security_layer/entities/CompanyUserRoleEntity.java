@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Table(name = "COMPANY_USER_ROLE")
 @Getter
 @Setter
-public class CompanyUserRoleEntity {
+public class CompanyUserRoleEntity extends Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
