@@ -14,6 +14,11 @@ public class AuditorAwareImpl implements AuditorAware<String> {
 
     @Override
     public Optional<String> getCurrentAuditor() {
+
+        if (this.authService.getUsername() == null) {
+            return Optional.empty();
+        }
+
         return Optional.of(this.authService.getUsername());
     }
 }
