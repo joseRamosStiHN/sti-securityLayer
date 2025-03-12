@@ -1,10 +1,16 @@
 package com.sti.accounting.security_layer.controller;
 
+import com.sti.accounting.security_layer.dto.CompanyByUser;
 import com.sti.accounting.security_layer.dto.CreateUserDto;
 import com.sti.accounting.security_layer.dto.UserDto;
+import com.sti.accounting.security_layer.dto.pageble.PageResponse;
+import com.sti.accounting.security_layer.dto.pageble.PageResponseDto;
+import com.sti.accounting.security_layer.entities.UserEntity;
 import com.sti.accounting.security_layer.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,6 +32,14 @@ public class UserController {
     public List<UserDto> getAllUsers() {
         log.info("Get all users");
         return userService.getAllUsers();
+    }
+
+
+    @GetMapping("/by-company/{id}")
+    public List<UserDto> getAllCompanyByUser(@PathVariable long id){
+
+        return userService.getUsersByComapany(id);
+
     }
 
     @GetMapping("/{id}")

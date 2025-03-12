@@ -57,6 +57,12 @@ public class UserService {
         return convertToUserDto(entity);
     }
 
+    public List<UserDto> getUsersByComapany(Long id) {
+        log.info("Get user by id {}", id);
+         return userRepository.getUsersByCompany(id).stream().map(this::convertToUserDto).toList();
+
+    }
+
     public UserDto getUserByUserNameAndPassword(String userName, String password) {
         log.info("Get user by username {}", userName);
         UserEntity entity = userRepository.findByUserName(userName);

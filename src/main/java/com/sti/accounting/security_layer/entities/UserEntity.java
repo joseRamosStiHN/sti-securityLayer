@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 @Table(name = "USER")
 @AllArgsConstructor
 @NoArgsConstructor
-public class UserEntity {
+public class UserEntity extends Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
