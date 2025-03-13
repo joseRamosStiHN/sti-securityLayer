@@ -311,6 +311,7 @@ public class UserService {
         dto.setEmail(entity.getEmail());
         dto.setUserAddress(entity.getUserAddress());
         dto.setUserPhone(entity.getUserPhone());
+        dto.setCreatedAt(entity.getCreatedAt());
         dto.setIsActive(entity.getIsActive());
 
         // Set global roles
