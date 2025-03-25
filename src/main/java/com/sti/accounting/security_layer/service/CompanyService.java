@@ -55,14 +55,14 @@ public class CompanyService {
         Page<CompanyEntity> companyPage = companyRepository.findCompanyByUser(userId, PageRequest.of(page, size));
 
 
-        List<CompanyByUser> companyDtos = companyPage.getContent().stream().map(this::responseCompanyPaginationDto).toList();
+        List<CompanyByUser> companyDtos = companyPage.getContent().stream().map(d-> responseCompanyPaginationDto(d,userId)).toList();
 
         return new PageImpl<>(companyDtos, PageRequest.of(page, size), companyPage.getTotalElements());
     }
 
     public CompanyByUser getCompanyByUser(Long userId, Long companyId) {
         CompanyEntity company = companyRepository.getCompanyByIdAndUser(companyId, userId);
-        return responseCompanyPaginationDto(company);
+        return responseCompanyPaginationDto(company, userId);
 
     }
 
@@ -339,7 +339,7 @@ public class CompanyService {
     }
 
 
-    private CompanyByUser responseCompanyPaginationDto(CompanyEntity entity) {
+    private CompanyByUser responseCompanyPaginationDto(CompanyEntity entity , Long userId) {
 
         CompanyByUser dto = new CompanyByUser();
         dto.setId(entity.getId());
@@ -353,14 +353,14 @@ public class CompanyService {
         dto.setType(entity.getType());
         dto.setTenantId(entity.getTenantId());
         dto.setCreatedAt(entity.getCreatedAt().toLocalDate());
-        dto.setRoles(getRolesByCompanies(entity.getId()));
+        dto.setRoles(getRolesByCompanies(entity.getId(),userId));
 
         return dto;
 
     }
 
-    private List<KeyValueDto> getRolesByCompanies(Long id) {
-        return roleRepository.getRoleByCompany(id).stream().map(r -> {
+    private List<KeyValueDto> getRolesByCompanies(Long companyId , Long userId) {
+        return roleRepository.getRoleByCompany(companyId,userId).stream().map(r -> {
             KeyValueDto keyValueDto = new KeyValueDto();
             keyValueDto.setId(r.getId());
             keyValueDto.setName(r.getRoleName());
