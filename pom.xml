@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.sti.accounting</groupId>
 	<artifactId>securityLayer</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.0</version>
 	<name>securityLayer</name>
 	<description>Security and Users</description>
 
