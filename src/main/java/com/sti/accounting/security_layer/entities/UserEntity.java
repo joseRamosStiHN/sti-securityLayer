@@ -57,7 +57,7 @@ public class UserEntity extends Auditable {
     // Método para obtener los roles globales
     public Set<RoleEntity> getGlobalRoles() {
         return userRoles.stream()
-                .map(UserRoleEntity::getRole) // Asumiendo que UserRoleEntity tiene un método getRole()
+                .map(UserRoleEntity::getRole)
                 .collect(Collectors.toSet());
     }
 }

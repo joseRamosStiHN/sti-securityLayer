@@ -1,16 +1,13 @@
 package com.sti.accounting.security_layer.controller;
 
-import com.sti.accounting.security_layer.dto.CompanyByUser;
+import com.sti.accounting.security_layer.dto.ChangePasswordRequest;
 import com.sti.accounting.security_layer.dto.CreateUserDto;
+import com.sti.accounting.security_layer.dto.PasswordRecoveryRequest;
 import com.sti.accounting.security_layer.dto.UserDto;
-import com.sti.accounting.security_layer.dto.pageble.PageResponse;
-import com.sti.accounting.security_layer.dto.pageble.PageResponseDto;
-import com.sti.accounting.security_layer.entities.UserEntity;
 import com.sti.accounting.security_layer.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -36,10 +33,8 @@ public class UserController {
 
 
     @GetMapping("/by-company/{id}")
-    public List<UserDto> getAllCompanyByUser(@PathVariable long id){
-
+    public List<UserDto> getAllCompanyByUser(@PathVariable long id) {
         return userService.getUsersByComapany(id);
-
     }
 
     @GetMapping("/{id}")
@@ -60,5 +55,15 @@ public class UserController {
         userService.updateUser(id, actionByUser, updateUserDto);
     }
 
+    @PostMapping("/recover-password")
+    public void recoverPassword(@Validated @RequestBody PasswordRecoveryRequest request) {
+        log.info("Password recovery request for email: {}", request.getEmail());
+        userService.recoverPassword(request);
+    }
 
+    @PostMapping("/change-password")
+    public void changePassword(@Validated @RequestBody ChangePasswordRequest request) {
+        log.info("Password change request for user ID: {}", request.getUserId());
+        userService.changePassword(request);
+    }
 }

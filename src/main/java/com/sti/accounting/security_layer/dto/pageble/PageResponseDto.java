@@ -18,7 +18,6 @@ public class PageResponseDto<T> implements PageResponse<T> {
     @JsonProperty("pageSize")
     private int pageSize;
 
-
     @JsonProperty("totalPages")
     private int totalPages;
 

@@ -27,7 +27,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
     private static final String[] PUBLIC_ROUTES = {
             "/api/v1/login",
-            "/api/v1/login/**"
+            "/api/v1/login/**",
+            "/api/v1/user/recover-password"
     };
 
     private final JwtServiceImplement jwtService;

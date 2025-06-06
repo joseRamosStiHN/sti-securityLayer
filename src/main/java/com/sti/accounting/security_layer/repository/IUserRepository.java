@@ -1,12 +1,12 @@
 package com.sti.accounting.security_layer.repository;
 
-import com.sti.accounting.security_layer.entities.CompanyEntity;
 import com.sti.accounting.security_layer.entities.UserEntity;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.ListCrudRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface IUserRepository extends ListCrudRepository<UserEntity, Long> {
@@ -15,7 +15,8 @@ public interface IUserRepository extends ListCrudRepository<UserEntity, Long> {
 
     UserEntity findByUserNameAndPassword(String userName, String password);
 
-
     @Query("SELECT u FROM UserEntity u JOIN FETCH u.companyUser cru WHERE cru.company.id =:companyId and u.isActive = true and cru.status = 'ACTIVE'")
     List<UserEntity> getUsersByCompany(Long companyId);
+
+    Optional<UserEntity> findByEmail(String email);
 }

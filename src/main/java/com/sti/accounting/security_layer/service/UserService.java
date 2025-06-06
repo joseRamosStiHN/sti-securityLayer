@@ -4,10 +4,9 @@ import com.sti.accounting.security_layer.core.Argon2Cipher;
 import com.sti.accounting.security_layer.dto.*;
 import com.sti.accounting.security_layer.entities.*;
 import com.sti.accounting.security_layer.repository.*;
+import com.sti.accounting.security_layer.utils.PasswordGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -59,7 +58,7 @@ public class UserService {
 
     public List<UserDto> getUsersByComapany(Long id) {
         log.info("Get user by id {}", id);
-         return userRepository.getUsersByCompany(id).stream().map(this::convertToUserDto).toList();
+        return userRepository.getUsersByCompany(id).stream().map(this::convertToUserDto).toList();
 
     }
 
@@ -440,5 +439,48 @@ public class UserService {
         }
     }
 
+    @Transactional
+    public void recoverPassword(PasswordRecoveryRequest request) {
+
+        UserEntity user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User with this email not found"));
+
+        PasswordGenerator generator = new PasswordGenerator();
+
+        String newPassword = generator.generatePassword(8);
+
+        user.setPassword(argon2Cipher.encrypt(newPassword));
+        userRepository.save(user);
+
+        try {
+            String emailContent = notificationService.buildRecoveryEmail(user.getFirstName(), newPassword);
+            notificationService.sendEmail("lcaceres@stiglobals.com", user.getEmail(), "Recuperación de Contraseña", emailContent);
+        } catch (Exception e) {
+            log.error("Error sending recovery email", e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error sending recovery email");
+        }
+    }
+
+    @Transactional
+    public void changePassword(ChangePasswordRequest request) {
+
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "New password and confirmation do not match");
+        }
+
+        UserEntity user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (!argon2Cipher.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La contraseña actual es incorrecta");
+        }
+
+        if (argon2Cipher.matches(request.getNewPassword(), user.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "New password must be different from current password");
+        }
+
+        user.setPassword(argon2Cipher.encrypt(request.getNewPassword()));
+        userRepository.save(user);
+    }
 
 }
