@@ -11,33 +11,6 @@ import java.util.List;
 @Service
 public class AuthService {
 
-//    public CustomUserDetails getAuthenticatedUser() {
-//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-//
-//        if (authentication != null && authentication.getPrincipal() instanceof CustomUserDetails) {
-//            return (CustomUserDetails) authentication.getPrincipal();
-//        }
-//
-//        throw new RuntimeException("Unauthenticated or invalid user");
-//    }
-//
-//    public String getUsername() {
-//        return getAuthenticatedUser().getUser().getUserName();
-//    }
-//
-//    public Long getUserId() {
-//        return getAuthenticatedUser().getUser().getId();
-//    }
-//
-//    public List<KeyValueDto> getUserRoles() {
-//        return getAuthenticatedUser().getUser().getGlobalRoles();
-//    }
-//
-//    public boolean hasRole(String roleName) {
-//        return getAuthenticatedUser().getUser().getGlobalRoles().stream()
-//                .anyMatch(role -> role.getName().equals(roleName));
-//    }
-
     public CustomUserDetails getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 

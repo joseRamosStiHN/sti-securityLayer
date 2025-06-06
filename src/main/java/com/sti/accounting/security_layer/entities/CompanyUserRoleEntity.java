@@ -29,10 +29,6 @@ public class CompanyUserRoleEntity extends Auditable {
     @JoinColumn(name = "role_id", nullable = false)
     private RoleEntity role;
 
-//    @ManyToOne
-//    @JoinColumn(name = "permissions_id")
-//    private PermissionsEntity permissions;
-
     private String status; // ACTIVE, SUSPENDED
 
     @CreatedDate

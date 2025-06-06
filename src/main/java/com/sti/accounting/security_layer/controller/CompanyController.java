@@ -64,7 +64,7 @@ public class CompanyController {
 
     @GetMapping("/logo/{id}")
     public ResponseEntity<byte[]> getCompanyLogo(@PathVariable Long id) {
-        log.info("Getting logo by company "+ id);
+        log.info("Getting logo by company {}", id);
 
         byte[] logo = companyService.getCompanyLogoById(id);
         if (logo == null) {
