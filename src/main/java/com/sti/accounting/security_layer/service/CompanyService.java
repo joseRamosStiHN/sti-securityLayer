@@ -53,7 +53,7 @@ public class CompanyService {
         Page<CompanyEntity> companyPage = companyRepository.findCompanyByUser(userId, PageRequest.of(page, size));
 
 
-        List<CompanyByUser> companyDtos = companyPage.getContent().stream().map(d-> responseCompanyPaginationDto(d,userId)).toList();
+        List<CompanyByUser> companyDtos = companyPage.getContent().stream().filter(CompanyEntity::getIsActive).map(d -> responseCompanyPaginationDto(d, userId)).toList();
 
         return new PageImpl<>(companyDtos, PageRequest.of(page, size), companyPage.getTotalElements());
     }
@@ -265,6 +265,26 @@ public class CompanyService {
         log.info("Company with id {} updated successfully", id);
     }
 
+    @Transactional
+    public void deleteCompany(Long id, Long actionByUser) {
+        log.info("Deleting company with id: {}", id);
+
+        CompanyEntity company = companyRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        String.format("No Company were found with the id %s", id)));
+
+        // 1. Eliminar registros de auditoría relacionados
+        companyUserRoleAuditRepository.deleteByCompanyId(id);
+
+        // 2. Eliminar relaciones usuario-rol-compañía
+        List<CompanyUserRoleEntity> userRoles = companyUserRepository.findByCompanyId(id);
+        companyUserRepository.deleteAll(userRoles);
+
+        // 3. Finalmente eliminar la compañía
+        companyRepository.delete(company);
+
+        log.info("Company with id {} was permanently deleted", id);
+    }
 
     private void responseCompanyDto(CompanyDto dto, CompanyEntity entity) {
         dto.setId(entity.getId());
@@ -337,7 +357,7 @@ public class CompanyService {
     }
 
 
-    private CompanyByUser responseCompanyPaginationDto(CompanyEntity entity , Long userId) {
+    private CompanyByUser responseCompanyPaginationDto(CompanyEntity entity, Long userId) {
 
         CompanyByUser dto = new CompanyByUser();
         dto.setId(entity.getId());
@@ -351,14 +371,14 @@ public class CompanyService {
         dto.setType(entity.getType());
         dto.setTenantId(entity.getTenantId());
         dto.setCreatedAt(entity.getCreatedAt().toLocalDate());
-        dto.setRoles(getRolesByCompanies(entity.getId(),userId));
+        dto.setRoles(getRolesByCompanies(entity.getId(), userId));
 
         return dto;
 
     }
 
-    private List<KeyValueDto> getRolesByCompanies(Long companyId , Long userId) {
-        return roleRepository.getRoleByCompany(companyId,userId).stream().map(r -> {
+    private List<KeyValueDto> getRolesByCompanies(Long companyId, Long userId) {
+        return roleRepository.getRoleByCompany(companyId, userId).stream().map(r -> {
             KeyValueDto keyValueDto = new KeyValueDto();
             keyValueDto.setId(r.getId());
             keyValueDto.setName(r.getRoleName());

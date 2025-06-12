@@ -99,5 +99,11 @@ public class CompanyController {
         companyService.updateCompany(id, actionByUser, companyDto);
     }
 
+    @DeleteMapping("/{id}/{actionByUser}")
+    public ResponseEntity<Void> deleteCompany(@PathVariable Long id, @PathVariable Long actionByUser) {
+        log.info("Deleting company with id: {}", id);
+        companyService.deleteCompany(id, actionByUser);
+        return ResponseEntity.noContent().build();
+    }
 
 }
