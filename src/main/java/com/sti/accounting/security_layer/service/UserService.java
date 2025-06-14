@@ -113,192 +113,141 @@ public class UserService {
 
     @Transactional
     public void updateUser(Long id, Long actionByUser, CreateUserDto userDto) {
-        log.info("Update user with id {}", id);
+        UserEntity user = userRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
-        UserEntity existingUser = userRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User  not found"));
+        // 1. Actualizar información básica del usuario
+        updateBasicInfo(user, userDto);
 
-        // Update basic user information
-        existingUser.setUserName(userDto.getUserName());
-        existingUser.setFirstName(userDto.getFirstName());
-        existingUser.setLastName(userDto.getLastName());
-        existingUser.setEmail(userDto.getEmail());
-        existingUser.setUserAddress(userDto.getUserAddress());
-        existingUser.setUserPhone(userDto.getUserPhone());
-        existingUser.setIsActive(userDto.isActive());
+        // 2. Actualizar roles globales (sin depender de compañías)
+        updateRoles(user, userDto.getGlobalRoles(), actionByUser);
 
-        // Update password if provided
-        if (userDto.getPassword() != null && !userDto.getPassword().isEmpty()) {
-            existingUser.setPassword(argon2Cipher.encrypt(userDto.getPassword()));
-        }
-
-        userRepository.save(existingUser);
-
-        // Obtener la empresa asociada al usuario
-        List<CompanyUserRoleEntity> userCompanyRoles = companyUserRoleRepository.findByUserId(existingUser.getId());
-        if (userCompanyRoles.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No companies found for user");
-        }
-
-        // Suponiendo que solo necesitas la primera empresa
-        CompanyEntity company = userCompanyRoles.get(0).getCompany();
-
-        // Update global roles
-        List<UserRoleEntity> existingGlobalRoles = userRoleRepository.findByUserId(id);
-
-        // Deactivate global roles that are not in the new list
-        for (UserRoleEntity existingRole : existingGlobalRoles) {
-            boolean roleExists = userDto.getGlobalRoles().stream()
-                    .anyMatch(r -> r.getId().equals(existingRole.getRole().getId()));
-
-            if (!roleExists) {
-                // Create audit record
-                CompanyUserRoleAuditEntity audit = new CompanyUserRoleAuditEntity();
-                audit.setCompany(company);
-                audit.setUser(existingUser);
-                audit.setRole(existingRole.getRole());
-                audit.setAction("REMOVED");
-                audit.setPreviousStatus("ACTIVE");
-                audit.setNewStatus("INACTIVE");
-                audit.setActionByUser(actionByUser);
-                audit.setActionDate(LocalDateTime.now());
-                companyUserRoleAuditRepository.save(audit);
-
-                // Remove the role
-                userRoleRepository.delete(existingRole);
-            }
-        }
-
-        // Crear o actualizar roles nuevos
-        for (KeyValueDto roleDto : userDto.getGlobalRoles()) {
-            boolean roleExists = existingGlobalRoles.stream()
-                    .anyMatch(r -> r.getRole().getId().equals(roleDto.getId()));
-
-            if (!roleExists) {
-                RoleEntity roleEntity = roleRepository.findById(roleDto.getId())
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                                "Role not found with id: " + roleDto.getId()));
-
-                UserRoleEntity userRoleEntity = new UserRoleEntity();
-                UserRoleKey userRoleKey = new UserRoleKey();
-                userRoleKey.setUserId(existingUser.getId());
-                userRoleKey.setRoleId(roleEntity.getId());
-
-                userRoleEntity.setRole(roleEntity);
-                userRoleEntity.setUser(existingUser);
-                userRoleEntity.setId(userRoleKey);
-                userRoleEntity.setCreatedAt(LocalDateTime.now());
-                userRoleRepository.save(userRoleEntity);
-
-                // Create audit record
-                CompanyUserRoleAuditEntity audit = new CompanyUserRoleAuditEntity();
-                audit.setCompany(company); // Aquí se asigna la empresa
-                audit.setUser(existingUser);
-                audit.setRole(roleEntity);
-                audit.setAction("ADDED");
-                audit.setNewStatus("ACTIVE");
-                audit.setActionByUser(actionByUser);
-                audit.setActionDate(LocalDateTime.now());
-                companyUserRoleAuditRepository.save(audit);
-            }
-        }
-
-        // Update company roles
-
+        // 3. Actualizar roles por compañía (maneja caso cuando no hay compañías)
         if (userDto.getCompanies() != null) {
-            for (CompanyUserDto companyUserDto : userDto.getCompanies()) {
-                CompanyEntity companyEntity = companyRepository.findById(companyUserDto.getId())
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                                "Company not found with id: " + companyUserDto.getId()));
+            userDto.getCompanies().forEach(companyDto ->
+                    updateCompanyRoles(user, companyDto, actionByUser)
+            );
+        }
+    }
 
-                List<CompanyUserRoleEntity> existingCompanyRoles =
-                        companyUserRoleRepository.findByCompanyIdAndUserId(companyEntity.getId(), existingUser.getId());
+    private void updateBasicInfo(UserEntity user, CreateUserDto dto) {
+        user.setUserName(dto.getUserName());
+        user.setFirstName(dto.getFirstName());
+        user.setLastName(dto.getLastName());
+        user.setEmail(dto.getEmail());
+        user.setUserAddress(dto.getUserAddress());
+        user.setUserPhone(dto.getUserPhone());
+        user.setIsActive(dto.isActive());
 
-                // Desactivar todos los roles existentes si se envía un array vacío
-                if (companyUserDto.getRoles() == null || companyUserDto.getRoles().isEmpty()) {
-                    for (CompanyUserRoleEntity existingRole : existingCompanyRoles) {
-                        if ("ACTIVE".equals(existingRole.getStatus())) {
-                            existingRole.setStatus("INACTIVE");
-                            companyUserRoleRepository.save(existingRole);
+        if (dto.getPassword() != null && !dto.getPassword().isEmpty()) {
+            user.setPassword(argon2Cipher.encrypt(dto.getPassword()));
+        }
+        userRepository.save(user);
+    }
 
-                            // Create audit record
-                            CompanyUserRoleAuditEntity audit = new CompanyUserRoleAuditEntity();
-                            audit.setCompany(companyEntity);
-                            audit.setUser(existingUser);
-                            audit.setRole(existingRole.getRole());
-                            audit.setAction("REMOVED");
-                            audit.setPreviousStatus("ACTIVE");
-                            audit.setNewStatus("INACTIVE");
-                            audit.setActionByUser(actionByUser);
-                            audit.setActionDate(LocalDateTime.now());
-                            companyUserRoleAuditRepository.save(audit);
-                        }
-                    }
-                    continue;
-                }
+    private void updateRoles(UserEntity user, List<KeyValueDto> newRoles, Long actionByUser) {
+        if (newRoles == null) return;
 
-                // Deactivate company roles that are not in the new list
-                for (CompanyUserRoleEntity existingRole : existingCompanyRoles) {
-                    if (!"ACTIVE".equals(existingRole.getStatus())) {
-                        continue;
-                    }
+        List<UserRoleEntity> currentRoles = userRoleRepository.findByUserId(user.getId());
 
-                    boolean roleExists = companyUserDto.getRoles().stream()
-                            .anyMatch(r -> r.getId().equals(existingRole.getRole().getId()));
+        // Eliminar roles que ya no están
+        currentRoles.stream()
+                .filter(role -> newRoles.stream().noneMatch(r -> r.getId().equals(role.getRole().getId())))
+                .forEach(role -> {
+                    userRoleRepository.delete(role);
+                    logRoleChange(null, user, role.getRole(), "REMOVED", actionByUser);
+                });
 
-                    if (!roleExists) {
-                        existingRole.setStatus("INACTIVE");
-                        companyUserRoleRepository.save(existingRole);
+        // Agregar nuevos roles
+        newRoles.stream()
+                .filter(roleDto -> currentRoles.stream().noneMatch(r -> r.getRole().getId().equals(roleDto.getId())))
+                .forEach(roleDto -> {
+                    RoleEntity role = roleRepository.findById(roleDto.getId())
+                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Role not found"));
 
-                        // Create audit record
-                        CompanyUserRoleAuditEntity audit = new CompanyUserRoleAuditEntity();
-                        audit.setCompany(companyEntity);
-                        audit.setUser(existingUser);
-                        audit.setRole(existingRole.getRole());
-                        audit.setAction("REMOVED");
-                        audit.setPreviousStatus("ACTIVE");
-                        audit.setNewStatus("INACTIVE");
-                        audit.setActionByUser(actionByUser);
-                        audit.setActionDate(LocalDateTime.now());
-                        companyUserRoleAuditRepository.save(audit);
-                    }
-                }
+                    UserRoleEntity userRole = new UserRoleEntity();
+                    userRole.setId(new UserRoleKey(user.getId(), role.getId()));
+                    userRole.setUser(user);
+                    userRole.setRole(role);
+                    userRoleRepository.save(userRole);
 
-                // Add new company roles
-                for (KeyValueDto roleDto : companyUserDto.getRoles()) {
-                    boolean roleExists = existingCompanyRoles.stream()
-                            .anyMatch(r -> r.getRole().getId().equals(roleDto.getId()) &&
-                                    "ACTIVE".equals(r.getStatus()));
+                    logRoleChange(null, user, role, "ADDED", actionByUser);
+                });
+    }
 
-                    if (!roleExists) {
-                        RoleEntity roleEntity = roleRepository.findById(roleDto.getId())
-                                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                                        "Role not found with id: " + roleDto.getId()));
+    private void updateCompanyRoles(UserEntity user, CompanyUserDto companyDto, Long actionByUser) {
+        CompanyEntity company = companyRepository.findById(companyDto.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Company not found"));
 
-                        CompanyUserRoleEntity companyUserRole = new CompanyUserRoleEntity();
-                        companyUserRole.setCompany(companyEntity);
-                        companyUserRole.setUser(existingUser);
-                        companyUserRole.setRole(roleEntity);
-                        companyUserRole.setStatus("ACTIVE");
-                        companyUserRole.setCreatedAt(LocalDateTime.now());
-                        companyUserRoleRepository.save(companyUserRole);
+        List<CompanyUserRoleEntity> currentRoles = companyUserRoleRepository
+                .findByCompanyIdAndUserId(company.getId(), user.getId());
 
-                        // Create audit record
-                        CompanyUserRoleAuditEntity audit = new CompanyUserRoleAuditEntity();
-                        audit.setCompany(companyEntity);
-                        audit.setUser(existingUser);
-                        audit.setRole(roleEntity);
-                        audit.setAction("ADDED");
-                        audit.setNewStatus("ACTIVE");
-                        audit.setActionByUser(actionByUser);
-                        audit.setActionDate(LocalDateTime.now());
-                        companyUserRoleAuditRepository.save(audit);
-                    }
-                }
-            }
+        // Manejar eliminación de todos los roles
+        if (companyDto.getRoles() == null || companyDto.getRoles().isEmpty()) {
+            currentRoles.forEach(role -> {
+                role.setStatus("INACTIVE");
+                companyUserRoleRepository.save(role);
+                logRoleChange(company, user, role.getRole(), "REMOVED", actionByUser);
+            });
+            return;
         }
 
-        log.info("User  with id {} updated successfully", id);
+        // Sincronizar roles
+        syncRoles(user, company, currentRoles, companyDto.getRoles(), actionByUser);
+    }
+
+    private void syncRoles(UserEntity user, CompanyEntity company,
+                           List<CompanyUserRoleEntity> currentRoles,
+                           List<KeyValueDto> newRoles, Long actionByUser) {
+        // Desactivar roles eliminados
+        currentRoles.stream()
+                .filter(role -> "ACTIVE".equals(role.getStatus()))
+                .filter(role -> newRoles.stream().noneMatch(r -> r.getId().equals(role.getRole().getId())))
+                .forEach(role -> {
+                    role.setStatus("INACTIVE");
+                    companyUserRoleRepository.save(role);
+                    logRoleChange(company, user, role.getRole(), "REMOVED", actionByUser);
+                });
+
+        // Agregar nuevos roles
+        newRoles.stream()
+                .filter(roleDto -> currentRoles.stream()
+                        .noneMatch(r -> r.getRole().getId().equals(roleDto.getId()) && "ACTIVE".equals(r.getStatus())))
+                .forEach(roleDto -> {
+                    RoleEntity role = roleRepository.findById(roleDto.getId())
+                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Rol no encontrado"));
+
+                    CompanyUserRoleEntity newRole = new CompanyUserRoleEntity();
+                    newRole.setCompany(company);
+                    newRole.setUser(user);
+                    newRole.setRole(role);
+                    newRole.setStatus("ACTIVE");
+                    companyUserRoleRepository.save(newRole);
+
+                    logRoleChange(company, user, role, "ADDED", actionByUser);
+                });
+    }
+
+    private void logRoleChange(CompanyEntity company, UserEntity user,
+                               RoleEntity role, String action, Long actionByUser) {
+        if (company == null) return;
+
+        CompanyUserRoleAuditEntity audit = new CompanyUserRoleAuditEntity();
+        audit.setCompany(company);
+        audit.setUser(user);
+        audit.setRole(role);
+        audit.setAction(action);
+        audit.setActionByUser(actionByUser);
+        audit.setActionDate(LocalDateTime.now());
+
+        if ("REMOVED".equals(action)) {
+            audit.setPreviousStatus("ACTIVE");
+            audit.setNewStatus("INACTIVE");
+        } else {
+            audit.setNewStatus("ACTIVE");
+        }
+
+        companyUserRoleAuditRepository.save(audit);
     }
 
     private UserDto convertToUserDto(UserEntity entity) {

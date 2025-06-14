@@ -273,14 +273,11 @@ public class CompanyService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         String.format("No Company were found with the id %s", id)));
 
-        // 1. Eliminar registros de auditoría relacionados
         companyUserRoleAuditRepository.deleteByCompanyId(id);
 
-        // 2. Eliminar relaciones usuario-rol-compañía
         List<CompanyUserRoleEntity> userRoles = companyUserRepository.findByCompanyId(id);
         companyUserRepository.deleteAll(userRoles);
 
-        // 3. Finalmente eliminar la compañía
         companyRepository.delete(company);
 
         log.info("Company with id {} was permanently deleted", id);
