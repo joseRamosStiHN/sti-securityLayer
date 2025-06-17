@@ -140,7 +140,7 @@ public class NotificationService {
                 "            <p>Por seguridad, te recomendamos cambiar esta contraseña después de iniciar sesión.</p>" +
                 "            <p>Si no solicitaste este cambio, por favor contacta a nuestro equipo de soporte inmediatamente.</p>" +
                 "            <p>Atentamente,</p>" +
-                "            <p>El equipo de STI Globals</p>" +
+                "            <p>Soporte STI Globals</p>" +
                 "        </div>" +
                 "        <div class='footer'>" +
                 "            <p>© 2025 STI Globals. Todos los derechos reservados.</p>" +
@@ -151,4 +151,49 @@ public class NotificationService {
                 "</html>";
     }
 
+    public String buildNewUserEmail(String userName, String userLogin, String password) {
+        return "<!DOCTYPE html>" +
+                "<html lang='es'>" +
+                "<head>" +
+                "    <meta charset='UTF-8'>" +
+                "    <meta name='viewport' content='width=device-width, initial-scale=1.0'>" +
+                "    <title>Bienvenido a Nuestra Plataforma</title>" +
+                "    <style>" +
+                "        body { font-family: 'Arial', sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5; }" +
+                "        .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 0 20px rgba(0,0,0,0.1); }" +
+                "        .header { background-color: #2563eb; padding: 20px; text-align: center; }" +
+                "        .header img { max-width: 150px; }" +
+                "        .content {font-size: 14px; padding: 30px; }" +
+                "        h1 { text-align: center; color: #2563eb; margin-top: 0; }" +
+                "        .credentials-box { background: #f0f7ff; border: 1px dashed #2563eb; border-radius: 6px; padding: 15px; margin: 20px 0; }" +
+                "        .credential-item { margin-bottom: 10px; }" +
+                "        .label { font-weight: bold; color: #1e40af; }" +
+                "        .button { display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; margin: 10px 0; }" +
+                "        .footer { background-color: #f1f5f9; padding: 20px; text-align: center; font-size: 14px; color: #64748b; }" +
+                "    </style>" +
+                "</head>" +
+                "<body>" +
+                "    <div class='container'>" +
+                "        <div class='header'>" +
+                "        </div>" +
+                "        <div class='content'>" +
+                "            <h1>Bienvenido a Nuestra Plataforma</h1>" +
+                "            <p>Hola " + (userName != null ? userName : "") + ",</p>" +
+                "            <p>Tu cuenta ha sido creada exitosamente. A continuación encontrarás tus credenciales de acceso:</p>" +
+                "            <div class='credentials-box'>" +
+                "                <div class='credential-item'><span class='label'>Usuario:</span> " + userLogin + "</div>" +
+                "                <div class='credential-item'><span class='label'>Contraseña:</span> " + password + "</div>" +
+                "            </div>" +
+                "            <p>Por seguridad, te recomendamos cambiar esta contraseña después de iniciar sesión por primera vez.</p>" +
+                "            <p>Atentamente,</p>" +
+                "            <p>Soporte STI Globals</p>" +
+                "        </div>" +
+                "        <div class='footer'>" +
+                "            <p>© 2025 STI Globals. Todos los derechos reservados.</p>" +
+                "            <p>Este es un correo automático, por favor no responder directamente.</p>" +
+                "        </div>" +
+                "    </div>" +
+                "</body>" +
+                "</html>";
+    }
 }

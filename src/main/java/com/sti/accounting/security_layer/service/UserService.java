@@ -74,6 +74,7 @@ public class UserService {
     }
 
 
+    @Transactional
     public void createUser(CreateUserDto userDto) {
         log.info("Create user");
 
@@ -81,6 +82,10 @@ public class UserService {
         if (userRepository.findByUserName(userDto.getUserName()) != null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User already exists");
         }
+
+        // Generar contraseña automática
+        PasswordGenerator generator = new PasswordGenerator();
+        String generatedPassword = generator.generatePassword(8);
 
         // Crear y guardar el usuario
         UserEntity entity = new UserEntity();
@@ -91,10 +96,28 @@ public class UserService {
         entity.setUserAddress(userDto.getUserAddress());
         entity.setUserPhone(userDto.getUserPhone());
         entity.setIsActive(userDto.isActive());
-        entity.setPassword(argon2Cipher.encrypt(userDto.getPassword()));
+        entity.setPassword(argon2Cipher.encrypt(generatedPassword));
         entity.setCreatedAt(LocalDateTime.now());
 
         userRepository.save(entity);
+
+        // Enviar correo con la contraseña
+        try {
+            String emailContent = notificationService.buildNewUserEmail(
+                    entity.getFirstName(),
+                    entity.getUserName(),
+                    generatedPassword
+            );
+            notificationService.sendEmail(
+                    "lcaceres@stiglobals.com",
+                    entity.getEmail(),
+                    "Bienvenido a nuestra plataforma - Credenciales de acceso",
+                    emailContent
+            );
+        } catch (Exception e) {
+            log.error("Error sending welcome email", e);
+        }
+
         // Guardar roles globales
         saveUserRoles(userDto.getGlobalRoles(), entity);
 
@@ -107,8 +130,6 @@ public class UserService {
                 saveCompanyUserRoles(companyUserDto.getRoles(), entity, companyEntity);
             }
         }
-
-
     }
 
     @Transactional
