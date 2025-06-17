@@ -32,6 +32,11 @@ jobs:
           sed -i "/^server.ssl.key-store-type=/c\server.ssl.key-store-type=PKCS12" $CONFIG_FILE || echo "server.ssl.key-store-type=PKCS12" >> $CONFIG_FILE
           sed -i "/^server.ssl.key-alias=/c\server.ssl.key-alias=tomcat" $CONFIG_FILE || echo "server.ssl.key-alias=tomcat" >> $CONFIG_FILE
 
+          # Twilio and grid settings
+          sed -i "/^app.account.sid=/c\app.account.sid=${{ secrets.SID }}" $CONFIG_FILE || echo "app.account.sid=${{ secrets.SID }}" >> $CONFIG_FILE
+          sed -i "/^app.auth.token=/c\app.auth.token=${{ secrets.TOKEN }}" $CONFIG_FILE || echo "app.auth.token=${{ secrets.TOKEN }}" >> $CONFIG_FILE 
+          sed -i "/^app.send.grid.key=/c\app.send.grid.key=${{ secrets.GRID_KEY }}" $CONFIG_FILE || echo "app.send.grid.key=${{ secrets.GRID_KEY }}" >> $CONFIG_FILE 
+
           sed -i "/^server.port=/c\server.port=8081" $CONFIG_FILE || echo "server.port=8081" >> $CONFIG_FILE
 
           # Verificar contenido final del archivo
