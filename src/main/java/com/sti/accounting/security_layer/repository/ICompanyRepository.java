@@ -11,7 +11,10 @@ import org.springframework.stereotype.Repository;
 public interface ICompanyRepository extends ListCrudRepository<CompanyEntity, Long> {
 
 
-    @Query("SELECT c FROM CompanyEntity c WHERE EXISTS (SELECT cru FROM c.companyUserEntity cru WHERE cru.user.id = :userId and cru.status = 'ACTIVE' ) And c.status = 'ACTIVE'")
+    @Query("SELECT c FROM CompanyEntity c " +
+            "WHERE EXISTS (SELECT cru FROM c.companyUserEntity cru " +
+            "WHERE cru.user.id = :userId AND cru.status = 'ACTIVE') " +
+            "AND c.isActive = true AND c.status = 'ACTIVE'")
     Page<CompanyEntity> findCompanyByUser(Long userId, Pageable pageable);
 
     @Query("SELECT c FROM CompanyEntity c JOIN FETCH c.companyUserEntity cru WHERE cru.user.id = :userId and c.id =:companyId and cru.status = 'ACTIVE' and c.status = 'ACTIVE' ")
