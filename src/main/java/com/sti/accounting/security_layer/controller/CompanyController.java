@@ -40,24 +40,20 @@ public class CompanyController {
     }
 
     @GetMapping("/company-user")
-    public ResponseEntity<? extends PageResponse<CompanyByUser>> getAllCompanyByUser(
-            @RequestParam(required = false, defaultValue = "0") Integer page ,
-            @RequestParam(required = false, defaultValue = "9") Integer size) {
-        
+    public ResponseEntity<Page<CompanyByUser>> getAllCompanyByUser(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
         Long userId = this.authService.getUserId();
-        Page<CompanyByUser> company = companyService.getAllCompanyByUser(page, size, userId);
-        
-        PageResponseDto<CompanyByUser> pageResponseDto = new PageResponseDto<>();
+        Page<CompanyByUser> result = companyService.getAllCompanyByUser(page, size, userId);
 
-        return pageResponseDto.buildResponseEntity(company.getSize(), company.getNumberOfElements(),
-                company.getTotalPages(), company.getNumber(), company.getContent());
-
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/user/{id}")
-    public CompanyByUser getCompanyByUser(@PathVariable Long id ) {
+    public CompanyByUser getCompanyByUser(@PathVariable Long id) {
         Long userId = this.authService.getUserId();
-       return companyService.getCompanyByUser(userId,id);
+        return companyService.getCompanyByUser(userId, id);
 
 
     }

@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,14 +49,11 @@ public class CompanyService {
         }).toList();
     }
 
-    public Page<CompanyByUser> getAllCompanyByUser(Integer page, Integer size, Long userId) {
+    public Page<CompanyByUser> getAllCompanyByUser(int page, int size, Long userId) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<CompanyEntity> companyPage = companyRepository.findCompanyByUser(userId, pageable);
 
-        Page<CompanyEntity> companyPage = companyRepository.findCompanyByUser(userId, PageRequest.of(page, size));
-
-
-        List<CompanyByUser> companyDtos = companyPage.getContent().stream().filter(CompanyEntity::getIsActive).map(d -> responseCompanyPaginationDto(d, userId)).toList();
-
-        return new PageImpl<>(companyDtos, PageRequest.of(page, size), companyPage.getTotalElements());
+        return companyPage.map(entity -> responseCompanyPaginationDto(entity, userId));
     }
 
     public CompanyByUser getCompanyByUser(Long userId, Long companyId) {
